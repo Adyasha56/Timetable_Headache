@@ -45,7 +45,7 @@ flowchart LR
 | Frontend | Next.js + TypeScript | Fast UI delivery, SSR when needed, good admin-dashboard fit |
 | UI system | Tailwind CSS + shadcn/ui or Radix | Strong composability for dense scheduling screens |
 | State/data | React Query + Zustand | Server state and local UI state stay cleanly separated |
-| Backend | Express + TypeScript | Simple, flexible, easy to scale with clear module boundaries |
+| Backend | Express (JavaScript) | Simple, flexible, easy to scale with clear module boundaries |
 | Database | MongoDB Atlas | Good fit for evolving scheduling documents and nested structures |
 | Queue | Redis | Reliable job coordination for solver workers |
 | Solver | Python + OR-Tools CP-SAT | Best-in-class for constraint solving |

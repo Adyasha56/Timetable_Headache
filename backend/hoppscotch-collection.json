@@ -1,0 +1,792 @@
+[
+  {
+    "v": 2,
+    "name": "Timetable Optimizer API",
+    "folders": [
+      {
+        "v": 2,
+        "name": "Health",
+        "folders": [],
+        "requests": [
+          {
+            "v": "1",
+            "name": "Health Check",
+            "method": "GET",
+            "endpoint": "http://localhost:8080/health",
+            "params": [],
+            "headers": [],
+            "auth": { "authType": "none", "authActive": false },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          }
+        ]
+      },
+      {
+        "v": 2,
+        "name": "Auth",
+        "folders": [],
+        "requests": [
+          {
+            "v": "1",
+            "name": "Login",
+            "method": "POST",
+            "endpoint": "http://localhost:8080/api/v1/auth/login",
+            "params": [],
+            "headers": [
+              { "key": "Content-Type", "value": "application/json", "active": true }
+            ],
+            "auth": { "authType": "none", "authActive": false },
+            "body": {
+              "contentType": "application/json",
+              "body": "{\n  \"email\": \"admin@university.com\",\n  \"password\": \"admin123\"\n}"
+            },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Get Current User (me)",
+            "method": "GET",
+            "endpoint": "http://localhost:8080/api/v1/auth/me",
+            "params": [],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Logout",
+            "method": "POST",
+            "endpoint": "http://localhost:8080/api/v1/auth/logout",
+            "params": [],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          }
+        ]
+      },
+      {
+        "v": 2,
+        "name": "Departments",
+        "folders": [],
+        "requests": [
+          {
+            "v": "1",
+            "name": "Get All Departments",
+            "method": "GET",
+            "endpoint": "http://localhost:8080/api/v1/departments",
+            "params": [],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Get Department by ID",
+            "method": "GET",
+            "endpoint": "http://localhost:8080/api/v1/departments/DEPARTMENT_ID",
+            "params": [],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Create Department",
+            "method": "POST",
+            "endpoint": "http://localhost:8080/api/v1/departments",
+            "params": [],
+            "headers": [
+              { "key": "Content-Type", "value": "application/json", "active": true }
+            ],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": {
+              "contentType": "application/json",
+              "body": "{\n  \"code\": \"CSE\",\n  \"name\": \"Computer Science and Engineering\",\n  \"room_group\": \"Block A\",\n  \"active\": true\n}"
+            },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Update Department",
+            "method": "PATCH",
+            "endpoint": "http://localhost:8080/api/v1/departments/DEPARTMENT_ID",
+            "params": [],
+            "headers": [
+              { "key": "Content-Type", "value": "application/json", "active": true }
+            ],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": {
+              "contentType": "application/json",
+              "body": "{\n  \"name\": \"Computer Science and Engineering\",\n  \"active\": true\n}"
+            },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Delete Department",
+            "method": "DELETE",
+            "endpoint": "http://localhost:8080/api/v1/departments/DEPARTMENT_ID",
+            "params": [],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          }
+        ]
+      },
+      {
+        "v": 2,
+        "name": "Faculty",
+        "folders": [],
+        "requests": [
+          {
+            "v": "1",
+            "name": "Get All Faculty",
+            "method": "GET",
+            "endpoint": "http://localhost:8080/api/v1/faculty",
+            "params": [
+              { "key": "dept_id", "value": "DEPARTMENT_ID", "active": false },
+              { "key": "page", "value": "1", "active": true },
+              { "key": "limit", "value": "20", "active": true }
+            ],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Get Faculty by ID",
+            "method": "GET",
+            "endpoint": "http://localhost:8080/api/v1/faculty/FACULTY_ID",
+            "params": [],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Create Faculty",
+            "method": "POST",
+            "endpoint": "http://localhost:8080/api/v1/faculty",
+            "params": [],
+            "headers": [
+              { "key": "Content-Type", "value": "application/json", "active": true }
+            ],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": {
+              "contentType": "application/json",
+              "body": "{\n  \"user_id\": \"USER_ID\",\n  \"name\": \"Dr. John Smith\",\n  \"dept_id\": \"DEPARTMENT_ID\",\n  \"type\": \"faculty\",\n  \"expertise\": [\"Data Structures\", \"Algorithms\"],\n  \"max_hours_per_week\": 18,\n  \"preferences\": {\n    \"preferred_slots\": [{ \"day\": 1, \"slot\": 2 }],\n    \"avoid_slots\": [{ \"day\": 5, \"slot\": 6 }]\n  },\n  \"joined_date\": \"2020-07-01\",\n  \"status\": \"active\",\n  \"is_probation\": false\n}"
+            },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Update Faculty",
+            "method": "PATCH",
+            "endpoint": "http://localhost:8080/api/v1/faculty/FACULTY_ID",
+            "params": [],
+            "headers": [
+              { "key": "Content-Type", "value": "application/json", "active": true }
+            ],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": {
+              "contentType": "application/json",
+              "body": "{\n  \"max_hours_per_week\": 20,\n  \"status\": \"active\"\n}"
+            },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Delete Faculty",
+            "method": "DELETE",
+            "endpoint": "http://localhost:8080/api/v1/faculty/FACULTY_ID",
+            "params": [],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          }
+        ]
+      },
+      {
+        "v": 2,
+        "name": "Subjects",
+        "folders": [],
+        "requests": [
+          {
+            "v": "1",
+            "name": "Get All Subjects",
+            "method": "GET",
+            "endpoint": "http://localhost:8080/api/v1/subjects",
+            "params": [
+              { "key": "dept_id", "value": "DEPARTMENT_ID", "active": false },
+              { "key": "type", "value": "theory", "active": false },
+              { "key": "page", "value": "1", "active": true },
+              { "key": "limit", "value": "20", "active": true }
+            ],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Get Subject by ID",
+            "method": "GET",
+            "endpoint": "http://localhost:8080/api/v1/subjects/SUBJECT_ID",
+            "params": [],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Create Theory Subject",
+            "method": "POST",
+            "endpoint": "http://localhost:8080/api/v1/subjects",
+            "params": [],
+            "headers": [
+              { "key": "Content-Type", "value": "application/json", "active": true }
+            ],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": {
+              "contentType": "application/json",
+              "body": "{\n  \"code\": \"CS301\",\n  \"name\": \"Data Structures and Algorithms\",\n  \"dept_id\": \"DEPARTMENT_ID\",\n  \"type\": \"theory\",\n  \"credits\": 4,\n  \"sessions_per_week\": 4,\n  \"session_duration_slots\": 1,\n  \"batch_count\": 1,\n  \"requires_lab_assistant\": false,\n  \"room_type_required\": \"classroom\",\n  \"enrollment\": 60,\n  \"active\": true\n}"
+            },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Create Lab Subject",
+            "method": "POST",
+            "endpoint": "http://localhost:8080/api/v1/subjects",
+            "params": [],
+            "headers": [
+              { "key": "Content-Type", "value": "application/json", "active": true }
+            ],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": {
+              "contentType": "application/json",
+              "body": "{\n  \"code\": \"CS302\",\n  \"name\": \"Data Structures Lab\",\n  \"dept_id\": \"DEPARTMENT_ID\",\n  \"type\": \"lab\",\n  \"credits\": 2,\n  \"sessions_per_week\": 2,\n  \"session_duration_slots\": 2,\n  \"batch_count\": 3,\n  \"requires_lab_assistant\": true,\n  \"room_type_required\": \"lab\",\n  \"enrollment\": 60,\n  \"active\": true\n}"
+            },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Update Subject",
+            "method": "PATCH",
+            "endpoint": "http://localhost:8080/api/v1/subjects/SUBJECT_ID",
+            "params": [],
+            "headers": [
+              { "key": "Content-Type", "value": "application/json", "active": true }
+            ],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": {
+              "contentType": "application/json",
+              "body": "{\n  \"enrollment\": 65,\n  \"sessions_per_week\": 3\n}"
+            },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Delete Subject",
+            "method": "DELETE",
+            "endpoint": "http://localhost:8080/api/v1/subjects/SUBJECT_ID",
+            "params": [],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          }
+        ]
+      },
+      {
+        "v": 2,
+        "name": "Rooms",
+        "folders": [],
+        "requests": [
+          {
+            "v": "1",
+            "name": "Get All Rooms",
+            "method": "GET",
+            "endpoint": "http://localhost:8080/api/v1/rooms",
+            "params": [
+              { "key": "dept_id", "value": "DEPARTMENT_ID", "active": false },
+              { "key": "type", "value": "classroom", "active": false },
+              { "key": "page", "value": "1", "active": true },
+              { "key": "limit", "value": "20", "active": true }
+            ],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Get Room by ID",
+            "method": "GET",
+            "endpoint": "http://localhost:8080/api/v1/rooms/ROOM_ID",
+            "params": [],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Create Classroom",
+            "method": "POST",
+            "endpoint": "http://localhost:8080/api/v1/rooms",
+            "params": [],
+            "headers": [
+              { "key": "Content-Type", "value": "application/json", "active": true }
+            ],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": {
+              "contentType": "application/json",
+              "body": "{\n  \"name\": \"Room 101\",\n  \"type\": \"classroom\",\n  \"capacity\": 60,\n  \"dept_id\": \"DEPARTMENT_ID\",\n  \"amenities\": [\"projector\", \"whiteboard\"],\n  \"blocked_slots\": [],\n  \"active\": true\n}"
+            },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Create Lab Room",
+            "method": "POST",
+            "endpoint": "http://localhost:8080/api/v1/rooms",
+            "params": [],
+            "headers": [
+              { "key": "Content-Type", "value": "application/json", "active": true }
+            ],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": {
+              "contentType": "application/json",
+              "body": "{\n  \"name\": \"CS Lab 1\",\n  \"type\": \"lab\",\n  \"capacity\": 30,\n  \"dept_id\": \"DEPARTMENT_ID\",\n  \"amenities\": [\"computers\", \"projector\"],\n  \"blocked_slots\": [],\n  \"active\": true\n}"
+            },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Update Room",
+            "method": "PATCH",
+            "endpoint": "http://localhost:8080/api/v1/rooms/ROOM_ID",
+            "params": [],
+            "headers": [
+              { "key": "Content-Type", "value": "application/json", "active": true }
+            ],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": {
+              "contentType": "application/json",
+              "body": "{\n  \"capacity\": 65,\n  \"amenities\": [\"projector\", \"whiteboard\", \"AC\"]\n}"
+            },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Delete Room",
+            "method": "DELETE",
+            "endpoint": "http://localhost:8080/api/v1/rooms/ROOM_ID",
+            "params": [],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          }
+        ]
+      },
+      {
+        "v": 2,
+        "name": "Calendars",
+        "folders": [],
+        "requests": [
+          {
+            "v": "1",
+            "name": "Get All Calendars",
+            "method": "GET",
+            "endpoint": "http://localhost:8080/api/v1/calendars",
+            "params": [],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Get Calendar by ID",
+            "method": "GET",
+            "endpoint": "http://localhost:8080/api/v1/calendars/SEMESTER_ID",
+            "params": [],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Create Calendar",
+            "method": "POST",
+            "endpoint": "http://localhost:8080/api/v1/calendars",
+            "params": [],
+            "headers": [
+              { "key": "Content-Type", "value": "application/json", "active": true }
+            ],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": {
+              "contentType": "application/json",
+              "body": "{\n  \"year\": 2026,\n  \"semester\": 1,\n  \"start_date\": \"2026-07-01\",\n  \"end_date\": \"2026-11-30\",\n  \"holidays\": [\"2026-08-15\", \"2026-10-02\"],\n  \"half_days\": [\"2026-09-05\"],\n  \"events\": [\n    {\n      \"date\": \"2026-09-20\",\n      \"name\": \"Annual Sports Day\",\n      \"slots_blocked\": [{ \"day\": 6, \"slot\": 1 }]\n    }\n  ]\n}"
+            },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Update Calendar",
+            "method": "PATCH",
+            "endpoint": "http://localhost:8080/api/v1/calendars/SEMESTER_ID",
+            "params": [],
+            "headers": [
+              { "key": "Content-Type", "value": "application/json", "active": true }
+            ],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": {
+              "contentType": "application/json",
+              "body": "{\n  \"holidays\": [\"2026-08-15\", \"2026-10-02\", \"2026-11-01\"]\n}"
+            },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Delete Calendar",
+            "method": "DELETE",
+            "endpoint": "http://localhost:8080/api/v1/calendars/SEMESTER_ID",
+            "params": [],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          }
+        ]
+      },
+      {
+        "v": 2,
+        "name": "Constraints",
+        "folders": [],
+        "requests": [
+          {
+            "v": "1",
+            "name": "Get All Constraints",
+            "method": "GET",
+            "endpoint": "http://localhost:8080/api/v1/constraints",
+            "params": [
+              { "key": "semesterId", "value": "SEMESTER_ID", "active": false },
+              { "key": "deptId", "value": "DEPARTMENT_ID", "active": false },
+              { "key": "type", "value": "hard", "active": false }
+            ],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Get Constraint by ID",
+            "method": "GET",
+            "endpoint": "http://localhost:8080/api/v1/constraints/CONSTRAINT_ID",
+            "params": [],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Create Hard Constraint",
+            "method": "POST",
+            "endpoint": "http://localhost:8080/api/v1/constraints",
+            "params": [],
+            "headers": [
+              { "key": "Content-Type", "value": "application/json", "active": true }
+            ],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": {
+              "contentType": "application/json",
+              "body": "{\n  \"semester_id\": \"SEMESTER_ID\",\n  \"dept_id\": \"DEPARTMENT_ID\",\n  \"raw_text\": \"Dr. John Smith is not available on Fridays after 2pm\",\n  \"parsed_json\": {\n    \"faculty_id\": \"FACULTY_ID\",\n    \"unavailable\": { \"day\": 5, \"slots\": [5, 6, 7] }\n  },\n  \"type\": \"hard\",\n  \"weight\": 1\n}"
+            },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Create Soft Constraint",
+            "method": "POST",
+            "endpoint": "http://localhost:8080/api/v1/constraints",
+            "params": [],
+            "headers": [
+              { "key": "Content-Type", "value": "application/json", "active": true }
+            ],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": {
+              "contentType": "application/json",
+              "body": "{\n  \"semester_id\": \"SEMESTER_ID\",\n  \"dept_id\": \"DEPARTMENT_ID\",\n  \"raw_text\": \"Prefer lab sessions in the afternoon\",\n  \"parsed_json\": {\n    \"subject_type\": \"lab\",\n    \"preferred_slots\": [4, 5, 6]\n  },\n  \"type\": \"soft\",\n  \"weight\": 3\n}"
+            },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Update Constraint",
+            "method": "PATCH",
+            "endpoint": "http://localhost:8080/api/v1/constraints/CONSTRAINT_ID",
+            "params": [],
+            "headers": [
+              { "key": "Content-Type", "value": "application/json", "active": true }
+            ],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": {
+              "contentType": "application/json",
+              "body": "{\n  \"status\": \"rejected\"\n}"
+            },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Delete Constraint",
+            "method": "DELETE",
+            "endpoint": "http://localhost:8080/api/v1/constraints/CONSTRAINT_ID",
+            "params": [],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          }
+        ]
+      },
+      {
+        "v": 2,
+        "name": "Timetables",
+        "folders": [],
+        "requests": [
+          {
+            "v": "1",
+            "name": "Get All Schedules",
+            "method": "GET",
+            "endpoint": "http://localhost:8080/api/v1/timetables",
+            "params": [
+              { "key": "semesterId", "value": "SEMESTER_ID", "active": false },
+              { "key": "deptId", "value": "DEPARTMENT_ID", "active": false },
+              { "key": "status", "value": "draft", "active": false }
+            ],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Get Schedule by ID",
+            "method": "GET",
+            "endpoint": "http://localhost:8080/api/v1/timetables/SCHEDULE_ID",
+            "params": [],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Generate Timetable",
+            "method": "POST",
+            "endpoint": "http://localhost:8080/api/v1/timetables/generate",
+            "params": [],
+            "headers": [
+              { "key": "Content-Type", "value": "application/json", "active": true }
+            ],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": {
+              "contentType": "application/json",
+              "body": "{\n  \"semester_id\": \"SEMESTER_ID\",\n  \"dept_id\": \"DEPARTMENT_ID\"\n}"
+            },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Get Generation Status",
+            "method": "GET",
+            "endpoint": "http://localhost:8080/api/v1/timetables/SCHEDULE_ID/status",
+            "params": [],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Lock Schedule",
+            "method": "POST",
+            "endpoint": "http://localhost:8080/api/v1/timetables/SCHEDULE_ID/lock",
+            "params": [],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Publish Schedule",
+            "method": "POST",
+            "endpoint": "http://localhost:8080/api/v1/timetables/SCHEDULE_ID/publish",
+            "params": [],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          }
+        ]
+      },
+      {
+        "v": 2,
+        "name": "Overrides",
+        "folders": [],
+        "requests": [
+          {
+            "v": "1",
+            "name": "Get All Overrides",
+            "method": "GET",
+            "endpoint": "http://localhost:8080/api/v1/overrides",
+            "params": [
+              { "key": "date", "value": "2026-09-15", "active": false },
+              { "key": "type", "value": "teacher_absent", "active": false }
+            ],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Get Override by ID",
+            "method": "GET",
+            "endpoint": "http://localhost:8080/api/v1/overrides/OVERRIDE_ID",
+            "params": [],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Report Teacher Absence",
+            "method": "POST",
+            "endpoint": "http://localhost:8080/api/v1/overrides/absence",
+            "params": [],
+            "headers": [
+              { "key": "Content-Type", "value": "application/json", "active": true }
+            ],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": {
+              "contentType": "application/json",
+              "body": "{\n  \"date\": \"2026-09-15\",\n  \"original_teacher_id\": \"FACULTY_ID\",\n  \"substitute_teacher_id\": \"SUBSTITUTE_FACULTY_ID\",\n  \"slot\": { \"day\": 1, \"period\": 3 },\n  \"subject_id\": \"SUBJECT_ID\",\n  \"room_id\": \"ROOM_ID\",\n  \"reason\": \"Medical leave\"\n}"
+            },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Block a Room",
+            "method": "POST",
+            "endpoint": "http://localhost:8080/api/v1/overrides/room-block",
+            "params": [],
+            "headers": [
+              { "key": "Content-Type", "value": "application/json", "active": true }
+            ],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": {
+              "contentType": "application/json",
+              "body": "{\n  \"date\": \"2026-09-20\",\n  \"room_id\": \"ROOM_ID\",\n  \"slot\": { \"day\": 6, \"period\": 1 },\n  \"reason\": \"Seminar event\"\n}"
+            },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Schedule Extra Class",
+            "method": "POST",
+            "endpoint": "http://localhost:8080/api/v1/overrides/extra-class",
+            "params": [],
+            "headers": [
+              { "key": "Content-Type", "value": "application/json", "active": true }
+            ],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": {
+              "contentType": "application/json",
+              "body": "{\n  \"date\": \"2026-09-22\",\n  \"original_teacher_id\": \"FACULTY_ID\",\n  \"slot\": { \"day\": 1, \"period\": 7 },\n  \"subject_id\": \"SUBJECT_ID\",\n  \"room_id\": \"ROOM_ID\",\n  \"reason\": \"Makeup class for holiday\"\n}"
+            },
+            "preRequestScript": "",
+            "testScript": ""
+          },
+          {
+            "v": "1",
+            "name": "Delete Override",
+            "method": "DELETE",
+            "endpoint": "http://localhost:8080/api/v1/overrides/OVERRIDE_ID",
+            "params": [],
+            "headers": [],
+            "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+            "body": { "contentType": null, "body": null },
+            "preRequestScript": "",
+            "testScript": ""
+          }
+        ]
+      }
+    ],
+    "requests": []
+  }
+]

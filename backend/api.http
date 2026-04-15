@@ -1,0 +1,532 @@
+# ============================================================
+# Timetable Optimizer — API Reference
+# Use with VS Code REST Client extension (humao.rest-client)
+# ============================================================
+
+@base = http://localhost:8080/api/v1
+@token = PASTE_YOUR_JWT_TOKEN_HERE
+
+# ============================================================
+# HEALTH
+# ============================================================
+
+### Health Check
+GET http://localhost:8080/health
+
+
+# ============================================================
+# AUTH
+# ============================================================
+
+### Login
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@university.com",
+  "password": "admin123"
+}
+
+###
+
+### Get Current User
+GET {{base}}/auth/me
+Authorization: Bearer {{token}}
+
+###
+
+### Logout
+POST {{base}}/auth/logout
+Authorization: Bearer {{token}}
+
+
+# ============================================================
+# DEPARTMENTS
+# ============================================================
+
+### Get All Departments
+GET {{base}}/departments
+Authorization: Bearer {{token}}
+
+###
+
+### Get Department by ID
+GET {{base}}/departments/DEPARTMENT_ID
+Authorization: Bearer {{token}}
+
+###
+
+### Create Department
+POST {{base}}/departments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "code": "CSE",
+  "name": "Computer Science and Engineering",
+  "room_group": "Block A",
+  "active": true
+}
+
+###
+
+### Update Department
+PATCH {{base}}/departments/DEPARTMENT_ID
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Computer Science and Engineering (Updated)",
+  "active": true
+}
+
+###
+
+### Delete Department
+DELETE {{base}}/departments/DEPARTMENT_ID
+Authorization: Bearer {{token}}
+
+
+# ============================================================
+# FACULTY
+# ============================================================
+
+### Get All Faculty (with optional filters)
+GET {{base}}/faculty?dept_id=DEPARTMENT_ID&page=1&limit=20
+Authorization: Bearer {{token}}
+
+###
+
+### Get Faculty by ID
+GET {{base}}/faculty/FACULTY_ID
+Authorization: Bearer {{token}}
+
+###
+
+### Create Faculty
+POST {{base}}/faculty
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "user_id": "USER_ID",
+  "name": "Dr. John Smith",
+  "dept_id": "DEPARTMENT_ID",
+  "type": "faculty",
+  "expertise": ["Data Structures", "Algorithms", "DBMS"],
+  "max_hours_per_week": 18,
+  "availability": [
+    [true, true, true, true, true, true],
+    [true, true, true, true, true, true],
+    [true, true, true, true, true, true],
+    [true, true, true, true, true, true],
+    [true, true, true, true, true, true]
+  ],
+  "preferences": {
+    "preferred_slots": [{ "day": 1, "slot": 2 }, { "day": 3, "slot": 4 }],
+    "avoid_slots": [{ "day": 5, "slot": 6 }]
+  },
+  "joined_date": "2020-07-01",
+  "status": "active",
+  "is_probation": false
+}
+
+###
+
+### Update Faculty
+PATCH {{base}}/faculty/FACULTY_ID
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "max_hours_per_week": 20,
+  "status": "active"
+}
+
+###
+
+### Delete Faculty
+DELETE {{base}}/faculty/FACULTY_ID
+Authorization: Bearer {{token}}
+
+
+# ============================================================
+# SUBJECTS
+# ============================================================
+
+### Get All Subjects (with optional filters)
+GET {{base}}/subjects?dept_id=DEPARTMENT_ID&type=theory&page=1&limit=20
+Authorization: Bearer {{token}}
+
+###
+
+### Get Subject by ID
+GET {{base}}/subjects/SUBJECT_ID
+Authorization: Bearer {{token}}
+
+###
+
+### Create Subject
+POST {{base}}/subjects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "code": "CS301",
+  "name": "Data Structures and Algorithms",
+  "dept_id": "DEPARTMENT_ID",
+  "type": "theory",
+  "credits": 4,
+  "sessions_per_week": 4,
+  "session_duration_slots": 1,
+  "batch_count": 1,
+  "requires_lab_assistant": false,
+  "room_type_required": "classroom",
+  "enrollment": 60,
+  "active": true
+}
+
+###
+
+### Create Lab Subject
+POST {{base}}/subjects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "code": "CS302",
+  "name": "Data Structures Lab",
+  "dept_id": "DEPARTMENT_ID",
+  "type": "lab",
+  "credits": 2,
+  "sessions_per_week": 2,
+  "session_duration_slots": 2,
+  "batch_count": 3,
+  "requires_lab_assistant": true,
+  "room_type_required": "lab",
+  "enrollment": 60,
+  "active": true
+}
+
+###
+
+### Update Subject
+PATCH {{base}}/subjects/SUBJECT_ID
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "enrollment": 65,
+  "sessions_per_week": 3
+}
+
+###
+
+### Delete Subject
+DELETE {{base}}/subjects/SUBJECT_ID
+Authorization: Bearer {{token}}
+
+
+# ============================================================
+# ROOMS
+# ============================================================
+
+### Get All Rooms (with optional filters)
+GET {{base}}/rooms?type=classroom&dept_id=DEPARTMENT_ID&page=1&limit=20
+Authorization: Bearer {{token}}
+
+###
+
+### Get Room by ID
+GET {{base}}/rooms/ROOM_ID
+Authorization: Bearer {{token}}
+
+###
+
+### Create Classroom
+POST {{base}}/rooms
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Room 101",
+  "type": "classroom",
+  "capacity": 60,
+  "dept_id": "DEPARTMENT_ID",
+  "amenities": ["projector", "whiteboard"],
+  "blocked_slots": [],
+  "active": true
+}
+
+###
+
+### Create Lab Room
+POST {{base}}/rooms
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "CS Lab 1",
+  "type": "lab",
+  "capacity": 30,
+  "dept_id": "DEPARTMENT_ID",
+  "amenities": ["computers", "projector"],
+  "blocked_slots": [{ "day": 5, "slot": 6 }],
+  "active": true
+}
+
+###
+
+### Update Room
+PATCH {{base}}/rooms/ROOM_ID
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "capacity": 65,
+  "amenities": ["projector", "whiteboard", "AC"]
+}
+
+###
+
+### Delete Room
+DELETE {{base}}/rooms/ROOM_ID
+Authorization: Bearer {{token}}
+
+
+# ============================================================
+# ACADEMIC CALENDARS
+# ============================================================
+
+### Get All Calendars
+GET {{base}}/calendars
+Authorization: Bearer {{token}}
+
+###
+
+### Get Calendar by ID
+GET {{base}}/calendars/SEMESTER_ID
+Authorization: Bearer {{token}}
+
+###
+
+### Create Calendar
+POST {{base}}/calendars
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "year": 2026,
+  "semester": 1,
+  "start_date": "2026-07-01",
+  "end_date": "2026-11-30",
+  "holidays": ["2026-08-15", "2026-10-02", "2026-11-01"],
+  "half_days": ["2026-09-05"],
+  "events": [
+    {
+      "date": "2026-09-20",
+      "name": "Annual Sports Day",
+      "slots_blocked": [{ "day": 6, "slot": 1 }, { "day": 6, "slot": 2 }]
+    }
+  ]
+}
+
+###
+
+### Update Calendar
+PATCH {{base}}/calendars/SEMESTER_ID
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "holidays": ["2026-08-15", "2026-10-02", "2026-11-01", "2026-11-15"]
+}
+
+###
+
+### Delete Calendar
+DELETE {{base}}/calendars/SEMESTER_ID
+Authorization: Bearer {{token}}
+
+
+# ============================================================
+# CONSTRAINTS
+# ============================================================
+
+### Get All Constraints (with optional filters)
+GET {{base}}/constraints?semesterId=SEMESTER_ID&deptId=DEPARTMENT_ID&type=hard
+Authorization: Bearer {{token}}
+
+###
+
+### Get Constraint by ID
+GET {{base}}/constraints/CONSTRAINT_ID
+Authorization: Bearer {{token}}
+
+###
+
+### Create Hard Constraint
+POST {{base}}/constraints
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "semester_id": "SEMESTER_ID",
+  "dept_id": "DEPARTMENT_ID",
+  "raw_text": "Dr. John Smith is not available on Fridays after 2pm",
+  "parsed_json": {
+    "faculty_id": "FACULTY_ID",
+    "unavailable": { "day": 5, "slots": [5, 6, 7] }
+  },
+  "type": "hard",
+  "weight": 1
+}
+
+###
+
+### Create Soft Constraint
+POST {{base}}/constraints
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "semester_id": "SEMESTER_ID",
+  "dept_id": "DEPARTMENT_ID",
+  "raw_text": "Prefer lab sessions in the afternoon",
+  "parsed_json": {
+    "subject_type": "lab",
+    "preferred_slots": [4, 5, 6]
+  },
+  "type": "soft",
+  "weight": 3
+}
+
+###
+
+### Update Constraint
+PATCH {{base}}/constraints/CONSTRAINT_ID
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "rejected"
+}
+
+###
+
+### Delete Constraint
+DELETE {{base}}/constraints/CONSTRAINT_ID
+Authorization: Bearer {{token}}
+
+
+# ============================================================
+# TIMETABLES
+# ============================================================
+
+### Get All Schedules (with optional filters)
+GET {{base}}/timetables?semesterId=SEMESTER_ID&deptId=DEPARTMENT_ID&status=draft
+Authorization: Bearer {{token}}
+
+###
+
+### Get Schedule by ID
+GET {{base}}/timetables/SCHEDULE_ID
+Authorization: Bearer {{token}}
+
+###
+
+### Generate Timetable (returns jobId immediately)
+POST {{base}}/timetables/generate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "semester_id": "SEMESTER_ID",
+  "dept_id": "DEPARTMENT_ID"
+}
+
+###
+
+### Get Generation Status
+GET {{base}}/timetables/SCHEDULE_ID/status
+Authorization: Bearer {{token}}
+
+###
+
+### Lock Schedule (locks all sessions)
+POST {{base}}/timetables/SCHEDULE_ID/lock
+Authorization: Bearer {{token}}
+
+###
+
+### Publish Schedule
+POST {{base}}/timetables/SCHEDULE_ID/publish
+Authorization: Bearer {{token}}
+
+
+# ============================================================
+# DAILY OVERRIDES
+# ============================================================
+
+### Get All Overrides (with optional filters)
+GET {{base}}/overrides?date=2026-09-15&type=teacher_absent
+Authorization: Bearer {{token}}
+
+###
+
+### Get Override by ID
+GET {{base}}/overrides/OVERRIDE_ID
+Authorization: Bearer {{token}}
+
+###
+
+### Report Teacher Absence
+POST {{base}}/overrides/absence
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "date": "2026-09-15",
+  "original_teacher_id": "FACULTY_ID",
+  "substitute_teacher_id": "SUBSTITUTE_FACULTY_ID",
+  "slot": { "day": 1, "period": 3 },
+  "subject_id": "SUBJECT_ID",
+  "room_id": "ROOM_ID",
+  "reason": "Medical leave"
+}
+
+###
+
+### Block a Room
+POST {{base}}/overrides/room-block
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "date": "2026-09-20",
+  "room_id": "ROOM_ID",
+  "slot": { "day": 6, "period": 1 },
+  "reason": "Seminar event"
+}
+
+###
+
+### Schedule Extra Class
+POST {{base}}/overrides/extra-class
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "date": "2026-09-22",
+  "original_teacher_id": "FACULTY_ID",
+  "slot": { "day": 1, "period": 7 },
+  "subject_id": "SUBJECT_ID",
+  "room_id": "ROOM_ID",
+  "reason": "Makeup class for holiday"
+}
+
+###
+
+### Delete Override
+DELETE {{base}}/overrides/OVERRIDE_ID
+Authorization: Bearer {{token}}
