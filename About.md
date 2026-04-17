@@ -56,3 +56,32 @@ Daily overrides + greedy substitute/room-swap logic + calendar blocking
 
 ### Phase 4
 Cross-department reconciliation + exports + analytics + fairness metrics
+
+LOGIN PAGE
+    ↓
+ADMIN DASHBOARD
+    ├── Setup (one time, start of year)
+    │     ├── Departments      → create CSE, CIVIL, ECE...
+    │     ├── Rooms            → Room 311, CS Lab 1...
+    │     ├── Users            → create HOD + faculty accounts
+    │     ├── Faculty          → availability grids, expertise
+    │     ├── Subjects         → sessions/week, lab/theory
+    │     └── Calendar         → semester dates, holidays
+    │
+    ├── Timetable (per semester)
+    │     ├── Constraints      → type or use AI to add rules
+    │     ├── Generate         → click button → watch SSE progress bar
+    │     ├── Review grid      → day×slot timetable view
+    │     ├── Lock → Publish   → goes live
+    │     └── Export           → PDF for notice board, iCal for phones
+    │
+    ├── Daily Operations (every day)
+    │     ├── Mark absent      → system suggests substitute
+    │     ├── Block room       → maintenance/event
+    │     └── Extra class      → makeup session
+    │
+    └── Settings
+          ├── Audit Log        → who did what
+          ├── Notifications    → bell icon, unread count
+          └── New Semester     → rollover button
+

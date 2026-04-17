@@ -24,4 +24,14 @@ const remove = async (req, res, next) => {
   try { await service.remove(req.params.id); success(res, null, 204); } catch (err) { next(err); }
 };
 
-module.exports = { getAll, getById, create, update, remove };
+const suggestAllocation = async (req, res, next) => {
+  try {
+    const { dept_id, semester_id } = req.query;
+    if (!dept_id || !semester_id) {
+      return next(new (require('../../common/errors/AppError'))('dept_id and semester_id are required', 400, 'VALIDATION_ERROR'));
+    }
+    success(res, await service.getSuggestedAllocation({ dept_id, semester_id }));
+  } catch (err) { next(err); }
+};
+
+module.exports = { getAll, getById, create, update, remove, suggestAllocation };

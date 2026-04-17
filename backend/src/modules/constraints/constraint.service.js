@@ -1,5 +1,6 @@
 const AppError = require('../../common/errors/AppError');
 const repo = require('./constraint.repository');
+const { parseConstraintText } = require('../../integrations/gemini');
 
 const getAll = async (query) => {
   const { semesterId, deptId, type, page = 1, limit = 20 } = query;
@@ -30,4 +31,25 @@ const remove = async (id) => {
   if (!constraint) throw new AppError('Constraint not found', 404, 'NOT_FOUND');
 };
 
-module.exports = { getAll, getById, create, update, remove };
+// LLM: parse raw text → structured constraint JSON, optionally save it
+const parse = async ({ raw_text, semester_id, dept_id, auto_save }, userId) => {
+  const context = { dept: dept_id, semester: semester_id };
+  const parsed_json = await parseConstraintText(raw_text, context);
+
+  if (!auto_save) return { raw_text, parsed_json };
+
+  const saved = await repo.create({
+    semester_id,
+    dept_id,
+    raw_text,
+    parsed_json,
+    type: parsed_json.type || 'soft',
+    weight: parsed_json.weight || 1,
+    status: 'pending',
+    created_by: userId,
+  });
+
+  return { raw_text, parsed_json, saved };
+};
+
+module.exports = { getAll, getById, create, update, remove, parse };

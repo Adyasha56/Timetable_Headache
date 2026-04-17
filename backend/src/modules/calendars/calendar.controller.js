@@ -1,4 +1,5 @@
 const service = require('./calendar.service');
+const { rollover } = require('./rollover.service');
 const { success } = require('../../common/utils/response');
 
 const getAll = async (req, res, next) => {
@@ -21,4 +22,8 @@ const remove = async (req, res, next) => {
   try { await service.remove(req.params.semesterId); success(res, null, 204); } catch (err) { next(err); }
 };
 
-module.exports = { getAll, getById, create, update, remove };
+const rolloverCalendar = async (req, res, next) => {
+  try { success(res, await rollover(req.body), 201); } catch (err) { next(err); }
+};
+
+module.exports = { getAll, getById, create, update, remove, rolloverCalendar };

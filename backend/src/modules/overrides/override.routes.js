@@ -5,6 +5,7 @@ const { authenticate, authorize } = require('../../common/middleware/auth.middle
 router.use(authenticate);
 
 router.get('/', controller.getAll);
+router.get('/suggestions', controller.getSuggestions);
 router.get('/:id', controller.getById);
 router.post('/absence', authorize('admin', 'hod', 'faculty'), controller.createAbsence);
 router.post('/room-block', authorize('admin', 'hod'), controller.createRoomBlock);

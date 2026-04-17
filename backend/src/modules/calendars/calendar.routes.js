@@ -5,6 +5,7 @@ const { authenticate, authorize } = require('../../common/middleware/auth.middle
 router.use(authenticate);
 
 router.get('/', controller.getAll);
+router.post('/rollover', authorize('admin'), controller.rolloverCalendar);
 router.get('/:semesterId', controller.getById);
 router.post('/', authorize('admin'), controller.create);
 router.patch('/:semesterId', authorize('admin'), controller.update);

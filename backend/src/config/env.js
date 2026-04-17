@@ -7,5 +7,6 @@ module.exports = {
   REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
   JWT_SECRET: process.env.JWT_SECRET || 'dev_secret_change_in_prod',
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
 };

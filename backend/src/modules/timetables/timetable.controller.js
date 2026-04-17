@@ -1,5 +1,6 @@
 const service = require('./timetable.service');
 const { success } = require('../../common/utils/response');
+const { setupSSE } = require('../../integrations/sse');
 
 const getAll = async (req, res, next) => {
   try {
@@ -20,6 +21,16 @@ const getStatus = async (req, res, next) => {
   try { success(res, await service.getStatus(req.params.scheduleId)); } catch (err) { next(err); }
 };
 
+const stream = async (req, res, next) => {
+  try {
+    const { scheduleId } = req.params;
+    const { send, close } = setupSSE(res);
+    send('connected', { scheduleId });
+    const cancel = await service.streamStatus(scheduleId, send, close);
+    req.on('close', cancel);
+  } catch (err) { next(err); }
+};
+
 const lock = async (req, res, next) => {
   try { success(res, await service.lock(req.params.scheduleId)); } catch (err) { next(err); }
 };
@@ -28,4 +39,8 @@ const publish = async (req, res, next) => {
   try { success(res, await service.publish(req.params.scheduleId)); } catch (err) { next(err); }
 };
 
-module.exports = { getAll, getById, generate, getStatus, lock, publish };
+const explainConflict = async (req, res, next) => {
+  try { success(res, await service.explainScheduleConflict(req.params.scheduleId)); } catch (err) { next(err); }
+};
+
+module.exports = { getAll, getById, generate, getStatus, stream, lock, publish, explainConflict };

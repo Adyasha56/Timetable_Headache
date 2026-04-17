@@ -21,6 +21,7 @@ const scheduleSchema = new mongoose.Schema(
       required: true,
     },
     dept_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Department', required: true },
+    section_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Section', default: null }, // null = whole dept
     status: { type: String, enum: ['draft', 'published', 'archived'], default: 'draft' },
     version: { type: Number, default: 1 },
     sessions: [sessionSchema],
@@ -29,6 +30,6 @@ const scheduleSchema = new mongoose.Schema(
   { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } }
 );
 
-scheduleSchema.index({ semester_id: 1, dept_id: 1, status: 1 });
+scheduleSchema.index({ semester_id: 1, dept_id: 1, section_id: 1, status: 1 });
 
 module.exports = mongoose.model('Schedule', scheduleSchema);

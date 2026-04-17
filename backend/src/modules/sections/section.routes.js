@@ -1,11 +1,8 @@
 const router = require('express').Router();
-const controller = require('./faculty.controller');
+const controller = require('./section.controller');
 const { authenticate, authorize } = require('../../common/middleware/auth.middleware');
 
 router.use(authenticate);
-
-// AI Touchpoint 1: GET /faculty/suggest-allocation?dept_id=&semester_id=
-router.get('/suggest-allocation', authorize('admin', 'hod'), controller.suggestAllocation);
 
 router.get('/', controller.getAll);
 router.get('/:id', controller.getById);

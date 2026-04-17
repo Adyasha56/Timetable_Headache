@@ -24,8 +24,12 @@ const createExtraClass = async (req, res, next) => {
   try { success(res, await service.createExtraClass(req.body, req.user.id), 201); } catch (err) { next(err); }
 };
 
+const getSuggestions = async (req, res, next) => {
+  try { success(res, await service.getSuggestions(req.query)); } catch (err) { next(err); }
+};
+
 const remove = async (req, res, next) => {
   try { await service.remove(req.params.id); success(res, null, 204); } catch (err) { next(err); }
 };
 
-module.exports = { getAll, getById, createAbsence, createRoomBlock, createExtraClass, remove };
+module.exports = { getAll, getById, createAbsence, createRoomBlock, createExtraClass, getSuggestions, remove };

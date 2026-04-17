@@ -1,4 +1,4 @@
-const service = require('./constraint.service');
+const service = require('./user.service');
 const { success } = require('../../common/utils/response');
 
 const getAll = async (req, res, next) => {
@@ -13,7 +13,7 @@ const getById = async (req, res, next) => {
 };
 
 const create = async (req, res, next) => {
-  try { success(res, await service.create(req.body, req.user.id), 201); } catch (err) { next(err); }
+  try { success(res, await service.create(req.body), 201); } catch (err) { next(err); }
 };
 
 const update = async (req, res, next) => {
@@ -24,8 +24,4 @@ const remove = async (req, res, next) => {
   try { await service.remove(req.params.id); success(res, null, 204); } catch (err) { next(err); }
 };
 
-const parse = async (req, res, next) => {
-  try { success(res, await service.parse(req.body, req.user.id)); } catch (err) { next(err); }
-};
-
-module.exports = { getAll, getById, create, update, remove, parse };
+module.exports = { getAll, getById, create, update, remove };

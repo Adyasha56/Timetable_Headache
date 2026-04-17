@@ -1,62 +1,167 @@
-# ============================================================
-# Timetable Optimizer — API Reference
-# Use with VS Code REST Client extension (humao.rest-client)
-# ============================================================
+# ================================================================
+# GIFT Timetable Optimizer — REST API Reference
+# Tool: VS Code REST Client extension (humao.rest-client)
+#
+# HOW TO USE:
+#   1. Install "REST Client" extension in VS Code
+#   2. Run: node src/seed-data.js
+#   3. Login → copy token → paste below
+#   4. Click "Send Request" above any ### block
+# ================================================================
 
-@base = http://localhost:8080/api/v1
+@base  = http://localhost:8080/api/v1
 @token = PASTE_YOUR_JWT_TOKEN_HERE
 
-# ============================================================
-# HEALTH
-# ============================================================
+
+# ================================================================
+# HEALTH CHECK
+# Purpose : Verify server is running
+# Website : Shown as a status indicator in admin dashboard header
+# ================================================================
 
 ### Health Check
 GET http://localhost:8080/health
 
 
-# ============================================================
+# ================================================================
 # AUTH
-# ============================================================
+# Purpose : Login / logout / get current session
+# Website : Login page → on success redirects to admin dashboard
+#           Token stored in localStorage/cookie by frontend
+#           /me used on every page load to verify session
+# ================================================================
 
-### Login
+### 1. Login — get JWT token
+# After sending, copy token from response → paste into @token above
 POST {{base}}/auth/login
 Content-Type: application/json
 
 {
-  "email": "admin@university.com",
+  "email": "admin@gift.edu.in",
   "password": "admin123"
 }
 
 ###
 
-### Get Current User
+### 2. Get current logged-in user
 GET {{base}}/auth/me
 Authorization: Bearer {{token}}
 
 ###
 
-### Logout
+### 3. Logout
 POST {{base}}/auth/logout
 Authorization: Bearer {{token}}
 
 
-# ============================================================
-# DEPARTMENTS
-# ============================================================
+# ================================================================
+# USER MANAGEMENT  [admin only]
+# Purpose : Create and manage user accounts for HODs and faculty
+# Website : Admin → Settings → User Management
+#           Admin creates accounts for each staff member
+#           Role controls what they can see/do on the website
+#           Roles: admin | hod | faculty | staff
+# ================================================================
 
-### Get All Departments
+### 4. List all users (filter by role/dept/status)
+GET {{base}}/users?role=faculty&page=1&limit=10
+Authorization: Bearer {{token}}
+
+###
+
+### 5. List all users — no filter
+GET {{base}}/users
+Authorization: Bearer {{token}}
+
+###
+
+### 6. Get user by ID
+GET {{base}}/users/USER_ID
+Authorization: Bearer {{token}}
+
+###
+
+### 7. Create HOD account
+# HOD can manage faculty, subjects, constraints for their dept
+POST {{base}}/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Dr. Joy Krishna Dash",
+  "email": "joy.dash@gift.edu.in",
+  "password": "hod123",
+  "role": "hod",
+  "dept_id": "DEPT_OBJECT_ID",
+  "status": "active"
+}
+
+###
+
+### 8. Create faculty account
+POST {{base}}/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Dr. Suchitra Pattnaik",
+  "email": "suchitra@gift.edu.in",
+  "password": "faculty123",
+  "role": "faculty",
+  "dept_id": "DEPT_OBJECT_ID",
+  "status": "active"
+}
+
+###
+
+### 9. Promote user to HOD
+PATCH {{base}}/users/USER_ID
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "role": "hod"
+}
+
+###
+
+### 10. Deactivate user (blocks login)
+PATCH {{base}}/users/USER_ID
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "inactive"
+}
+
+###
+
+### 11. Delete user
+DELETE {{base}}/users/USER_ID
+Authorization: Bearer {{token}}
+
+
+# ================================================================
+# DEPARTMENTS
+# Purpose : Master list of all departments in the college
+# Website : Admin → Setup → Departments
+#           First thing admin creates before anything else
+#           All faculty, subjects, rooms are linked to a dept
+# ================================================================
+
+### 12. List all departments
 GET {{base}}/departments
 Authorization: Bearer {{token}}
 
 ###
 
-### Get Department by ID
+### 13. Get single department
 GET {{base}}/departments/DEPARTMENT_ID
 Authorization: Bearer {{token}}
 
 ###
 
-### Create Department
+### 14. Create department
 POST {{base}}/departments
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -70,61 +175,74 @@ Content-Type: application/json
 
 ###
 
-### Update Department
+### 15. Update department
 PATCH {{base}}/departments/DEPARTMENT_ID
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "Computer Science and Engineering (Updated)",
+  "name": "Computer Science and Engineering",
   "active": true
 }
 
 ###
 
-### Delete Department
+### 16. Delete department
 DELETE {{base}}/departments/DEPARTMENT_ID
 Authorization: Bearer {{token}}
 
 
-# ============================================================
+# ================================================================
 # FACULTY
-# ============================================================
+# Purpose : All teaching staff records with availability
+# Website : Admin/HOD → Setup → Faculty
+#           Each faculty has a 6×8 availability grid (Mon-Sat, 8 slots)
+#           Solver uses availability to avoid scheduling conflicts
+#           preferences.avoid_slots = "please don't schedule me here"
+# ================================================================
 
-### Get All Faculty (with optional filters)
+### 17. List faculty (filter by dept)
 GET {{base}}/faculty?dept_id=DEPARTMENT_ID&page=1&limit=20
 Authorization: Bearer {{token}}
 
 ###
 
-### Get Faculty by ID
+### 18. List all faculty
+GET {{base}}/faculty
+Authorization: Bearer {{token}}
+
+###
+
+### 19. Get faculty by ID
 GET {{base}}/faculty/FACULTY_ID
 Authorization: Bearer {{token}}
 
 ###
 
-### Create Faculty
+### 20. Create faculty
+# availability: 6 rows (Mon-Sat) × 8 cols (slots 0-7) → true=available
 POST {{base}}/faculty
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "user_id": "USER_ID",
-  "name": "Dr. John Smith",
+  "user_id": "USER_OBJECT_ID",
+  "name": "Dr. Suchitra Pattnaik",
   "dept_id": "DEPARTMENT_ID",
   "type": "faculty",
-  "expertise": ["Data Structures", "Algorithms", "DBMS"],
+  "expertise": ["Artificial Intelligence", "Machine Learning"],
   "max_hours_per_week": 18,
   "availability": [
-    [true, true, true, true, true, true],
-    [true, true, true, true, true, true],
-    [true, true, true, true, true, true],
-    [true, true, true, true, true, true],
-    [true, true, true, true, true, true]
+    [true, true, true, true, true, true, true, true],
+    [true, true, true, true, true, true, true, true],
+    [true, true, true, true, true, true, true, true],
+    [true, true, true, true, true, true, true, true],
+    [true, true, true, true, true, true, true, true],
+    [true, true, false, false, false, false, false, false]
   ],
   "preferences": {
-    "preferred_slots": [{ "day": 1, "slot": 2 }, { "day": 3, "slot": 4 }],
-    "avoid_slots": [{ "day": 5, "slot": 6 }]
+    "preferred_slots": [{ "day": 1, "slot": 2 }],
+    "avoid_slots": [{ "day": 5, "slot": 7 }]
   },
   "joined_date": "2020-07-01",
   "status": "active",
@@ -133,7 +251,7 @@ Content-Type: application/json
 
 ###
 
-### Update Faculty
+### 21. Update faculty
 PATCH {{base}}/faculty/FACULTY_ID
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -145,35 +263,46 @@ Content-Type: application/json
 
 ###
 
-### Delete Faculty
+### 22. Delete faculty
 DELETE {{base}}/faculty/FACULTY_ID
 Authorization: Bearer {{token}}
 
 
-# ============================================================
+# ================================================================
 # SUBJECTS
-# ============================================================
+# Purpose : All subjects offered per department
+# Website : Admin/HOD → Setup → Subjects
+#           sessions_per_week tells solver how many slots to assign
+#           type=lab → solver picks lab room, assigns lab_assistant
+#           batch_count=3 → same lab subject runs in 3 batches
+# ================================================================
 
-### Get All Subjects (with optional filters)
+### 23. List subjects (filter by dept/type)
 GET {{base}}/subjects?dept_id=DEPARTMENT_ID&type=theory&page=1&limit=20
 Authorization: Bearer {{token}}
 
 ###
 
-### Get Subject by ID
+### 24. List all subjects
+GET {{base}}/subjects
+Authorization: Bearer {{token}}
+
+###
+
+### 25. Get subject by ID
 GET {{base}}/subjects/SUBJECT_ID
 Authorization: Bearer {{token}}
 
 ###
 
-### Create Subject
+### 26. Create theory subject
 POST {{base}}/subjects
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "code": "CS301",
-  "name": "Data Structures and Algorithms",
+  "code": "CS201",
+  "name": "Programming Using Data Structures",
   "dept_id": "DEPARTMENT_ID",
   "type": "theory",
   "credits": 4,
@@ -188,14 +317,14 @@ Content-Type: application/json
 
 ###
 
-### Create Lab Subject
+### 27. Create lab subject
 POST {{base}}/subjects
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "code": "CS302",
-  "name": "Data Structures Lab",
+  "code": "CS201L",
+  "name": "Programming Using Data Structures Lab",
   "dept_id": "DEPARTMENT_ID",
   "type": "lab",
   "credits": 2,
@@ -210,7 +339,7 @@ Content-Type: application/json
 
 ###
 
-### Update Subject
+### 28. Update subject
 PATCH {{base}}/subjects/SUBJECT_ID
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -222,34 +351,44 @@ Content-Type: application/json
 
 ###
 
-### Delete Subject
+### 29. Delete subject
 DELETE {{base}}/subjects/SUBJECT_ID
 Authorization: Bearer {{token}}
 
 
-# ============================================================
+# ================================================================
 # ROOMS
-# ============================================================
+# Website : Admin → Setup → Rooms
+#           Rooms are college-wide (not dept-specific)
+#           blocked_slots = room unavailable at that day/slot (event, maintenance)
+#           Solver matches room.type with subject.room_type_required
+# ================================================================
 
-### Get All Rooms (with optional filters)
-GET {{base}}/rooms?type=classroom&dept_id=DEPARTMENT_ID&page=1&limit=20
+### 30. List rooms (filter by type)
+GET {{base}}/rooms?type=classroom&page=1&limit=20
 Authorization: Bearer {{token}}
 
 ###
 
-### Get Room by ID
+### 31. List all rooms
+GET {{base}}/rooms
+Authorization: Bearer {{token}}
+
+###
+
+### 32. Get room by ID
 GET {{base}}/rooms/ROOM_ID
 Authorization: Bearer {{token}}
 
 ###
 
-### Create Classroom
+### 33. Create classroom
 POST {{base}}/rooms
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "Room 101",
+  "name": "Room 311",
   "type": "classroom",
   "capacity": 60,
   "dept_id": "DEPARTMENT_ID",
@@ -260,7 +399,7 @@ Content-Type: application/json
 
 ###
 
-### Create Lab Room
+### 34. Create lab room
 POST {{base}}/rooms
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -271,13 +410,13 @@ Content-Type: application/json
   "capacity": 30,
   "dept_id": "DEPARTMENT_ID",
   "amenities": ["computers", "projector"],
-  "blocked_slots": [{ "day": 5, "slot": 6 }],
+  "blocked_slots": [],
   "active": true
 }
 
 ###
 
-### Update Room
+### 35. Update room
 PATCH {{base}}/rooms/ROOM_ID
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -289,28 +428,33 @@ Content-Type: application/json
 
 ###
 
-### Delete Room
+### 36. Delete room
 DELETE {{base}}/rooms/ROOM_ID
 Authorization: Bearer {{token}}
 
 
-# ============================================================
+# ================================================================
 # ACADEMIC CALENDARS
-# ============================================================
+# Purpose : Define semester dates, holidays, half-days, events
+# Website : Admin → Setup → Academic Calendar
+#           Must be created before generating a timetable
+#           Solver skips holiday dates automatically
+#           One calendar per year+semester combination
+# ================================================================
 
-### Get All Calendars
+### 37. List all calendars
 GET {{base}}/calendars
 Authorization: Bearer {{token}}
 
 ###
 
-### Get Calendar by ID
+### 38. Get calendar by ID
 GET {{base}}/calendars/SEMESTER_ID
 Authorization: Bearer {{token}}
 
 ###
 
-### Create Calendar
+### 39. Create calendar for a semester
 POST {{base}}/calendars
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -333,7 +477,7 @@ Content-Type: application/json
 
 ###
 
-### Update Calendar
+### 40. Update calendar (add a holiday)
 PATCH {{base}}/calendars/SEMESTER_ID
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -344,28 +488,53 @@ Content-Type: application/json
 
 ###
 
-### Delete Calendar
+### 41. Delete calendar
 DELETE {{base}}/calendars/SEMESTER_ID
 Authorization: Bearer {{token}}
 
+###
 
-# ============================================================
+### 42. Year Rollover — start new semester from existing one
+# Purpose : When a new sem begins, admin doesn't re-enter everything
+# Website : Admin → Calendar → "Start New Semester" button
+#           Faculty/subjects carry over automatically
+#           Constraints copied as "pending" → admin reviews before activating
+POST {{base}}/calendars/rollover
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "from_semester_id": "SEMESTER_OBJECT_ID",
+  "to_year": 2027,
+  "to_semester": 1,
+  "start_date": "2027-07-01",
+  "end_date": "2027-11-30",
+  "copy_constraints": true
+}
+
+
+# ================================================================
 # CONSTRAINTS
-# ============================================================
+# Purpose : Rules the timetable solver must follow
+# Website : Admin/HOD → Timetable → Constraints
+#           Two ways to add: manually fill form OR type in plain English
+#           Hard constraint = solver must never break it
+#           Soft constraint = solver tries to respect it, can skip if needed
+# ================================================================
 
-### Get All Constraints (with optional filters)
+### 43. List constraints (filter by semester/dept)
 GET {{base}}/constraints?semesterId=SEMESTER_ID&deptId=DEPARTMENT_ID&type=hard
 Authorization: Bearer {{token}}
 
 ###
 
-### Get Constraint by ID
+### 44. Get constraint by ID
 GET {{base}}/constraints/CONSTRAINT_ID
 Authorization: Bearer {{token}}
 
 ###
 
-### Create Hard Constraint
+### 45. Create constraint manually
 POST {{base}}/constraints
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -373,37 +542,50 @@ Content-Type: application/json
 {
   "semester_id": "SEMESTER_ID",
   "dept_id": "DEPARTMENT_ID",
-  "raw_text": "Dr. John Smith is not available on Fridays after 2pm",
+  "raw_text": "Dr. Suchitra Pattnaik is not available on Saturdays",
   "parsed_json": {
-    "faculty_id": "FACULTY_ID",
-    "unavailable": { "day": 5, "slots": [5, 6, 7] }
+    "rule": { "unavailable_days": [5] },
+    "entities": { "faculty_name": "Dr. Suchitra Pattnaik" }
   },
   "type": "hard",
-  "weight": 1
+  "weight": 5
 }
 
 ###
 
-### Create Soft Constraint
-POST {{base}}/constraints
+### 46. Parse constraint from plain English (Gemini AI)
+# Purpose : Admin types natural language → AI converts to structured JSON
+# Website : Constraints page → "Add with AI" input box
+#           auto_save: true  → parses AND saves in one step
+#           auto_save: false → shows preview, admin confirms before saving
+POST {{base}}/constraints/parse
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
+  "raw_text": "Dr. Suchitra Pattnaik is not available on Saturdays",
   "semester_id": "SEMESTER_ID",
   "dept_id": "DEPARTMENT_ID",
-  "raw_text": "Prefer lab sessions in the afternoon",
-  "parsed_json": {
-    "subject_type": "lab",
-    "preferred_slots": [4, 5, 6]
-  },
-  "type": "soft",
-  "weight": 3
+  "auto_save": false
 }
 
 ###
 
-### Update Constraint
+### 47. Save after previewing parsed constraint
+POST {{base}}/constraints/parse
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "raw_text": "Prefer lab sessions in the afternoon after 1pm",
+  "semester_id": "SEMESTER_ID",
+  "dept_id": "DEPARTMENT_ID",
+  "auto_save": true
+}
+
+###
+
+### 48. Update constraint status
 PATCH {{base}}/constraints/CONSTRAINT_ID
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -414,28 +596,40 @@ Content-Type: application/json
 
 ###
 
-### Delete Constraint
+### 49. Delete constraint
 DELETE {{base}}/constraints/CONSTRAINT_ID
 Authorization: Bearer {{token}}
 
 
-# ============================================================
-# TIMETABLES
-# ============================================================
+# ================================================================
+# TIMETABLE GENERATION
+# Purpose : Trigger the CP-SAT solver to generate a timetable
+# Website : Admin/HOD → Timetable → "Generate Timetable" button
+#
+# FULL FLOW:
+#   1. POST /generate → returns jobId immediately (202)
+#   2. GET  /stream   → browser connects via SSE, watches live progress
+#   3. GET  /status   → poll job status (pending → running → done/failed)
+#   4. GET  /:id      → fetch final timetable with all sessions populated
+#   5. POST /lock     → lock all sessions (prevents accidental edits)
+#   6. POST /publish  → publish → timetable is now live and immutable
+# ================================================================
 
-### Get All Schedules (with optional filters)
-GET {{base}}/timetables?semesterId=SEMESTER_ID&deptId=DEPARTMENT_ID&status=draft
+### 50. List all schedules
+GET {{base}}/timetables?status=draft
 Authorization: Bearer {{token}}
 
 ###
 
-### Get Schedule by ID
-GET {{base}}/timetables/SCHEDULE_ID
+### 51. List published schedules
+GET {{base}}/timetables?status=published&deptId=DEPARTMENT_ID
 Authorization: Bearer {{token}}
 
 ###
 
-### Generate Timetable (returns jobId immediately)
+### 52. Generate timetable — triggers Python CP-SAT solver
+# Returns immediately with scheduleId + jobId
+# Python worker picks job from Redis and starts solving
 POST {{base}}/timetables/generate
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -447,40 +641,82 @@ Content-Type: application/json
 
 ###
 
-### Get Generation Status
+### 53. Poll job status (pending → running → done/failed)
 GET {{base}}/timetables/SCHEDULE_ID/status
 Authorization: Bearer {{token}}
 
 ###
 
-### Lock Schedule (locks all sessions)
+### 54. View full generated timetable (sessions with faculty/room/slot)
+# day: 1=Mon 2=Tue 3=Wed 4=Thu 5=Fri 6=Sat
+# slot: 0=08:30  1=09:30  2=10:30  3=11:30
+#       4=12:30  5=13:30  6=14:30  7=15:30
+GET {{base}}/timetables/SCHEDULE_ID
+Authorization: Bearer {{token}}
+
+###
+
+### 55. Explain why timetable failed (Gemini AI)
+# Website : After a failed generation → "Why did this fail?" button
+#           AI reads the error from solver job and explains in plain English
+GET {{base}}/timetables/SCHEDULE_ID/explain
+Authorization: Bearer {{token}}
+
+###
+
+### 56. Lock schedule (all sessions become is_locked=true)
+# Website : HOD reviews timetable → clicks "Lock" before publishing
 POST {{base}}/timetables/SCHEDULE_ID/lock
 Authorization: Bearer {{token}}
 
 ###
 
-### Publish Schedule
+### 57. Publish schedule (draft → published, becomes immutable)
+# Website : Admin final approval → "Publish" button
+#           After this, timetable is visible to all faculty/students
+#           Any further changes go through Daily Overrides only
 POST {{base}}/timetables/SCHEDULE_ID/publish
 Authorization: Bearer {{token}}
 
 
-# ============================================================
+# ================================================================
 # DAILY OVERRIDES
-# ============================================================
+# Purpose : Handle day-to-day exceptions without re-running the solver
+# Website : Admin/HOD → Daily Operations dashboard
+#
+# 3 types of overrides:
+#   1. absence    → teacher absent, system suggests substitute
+#   2. room-block → room unavailable (maintenance, event)
+#   3. extra-class → makeup class for a holiday
+#
+# GREEDY SUBSTITUTE LOGIC:
+#   When a teacher is absent and no substitute is given,
+#   system automatically finds available faculty from same dept
+#   who are free at that slot (not teaching, not already substituting)
+# ================================================================
 
-### Get All Overrides (with optional filters)
-GET {{base}}/overrides?date=2026-09-15&type=teacher_absent
+### 58. List overrides for a date
+GET {{base}}/overrides?date=2026-09-15
 Authorization: Bearer {{token}}
 
 ###
 
-### Get Override by ID
-GET {{base}}/overrides/OVERRIDE_ID
+### 59. List overrides by type
+GET {{base}}/overrides?type=teacher_absent
 Authorization: Bearer {{token}}
 
 ###
 
-### Report Teacher Absence
+### 60. Get substitute suggestions for a slot (greedy algorithm)
+# Website : "Who can cover this slot?" — shown before filing an absence
+# Returns list of available faculty in the dept for that slot
+GET {{base}}/overrides/suggestions?dept_id=DEPARTMENT_ID&date=2026-09-15&period=2
+Authorization: Bearer {{token}}
+
+###
+
+### 61. Report teacher absence (with substitute)
+# Website : HOD fills absence form → assigns substitute manually
 POST {{base}}/overrides/absence
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -489,15 +725,35 @@ Content-Type: application/json
   "date": "2026-09-15",
   "original_teacher_id": "FACULTY_ID",
   "substitute_teacher_id": "SUBSTITUTE_FACULTY_ID",
-  "slot": { "day": 1, "period": 3 },
+  "slot": { "day": 1, "period": 2 },
   "subject_id": "SUBJECT_ID",
   "room_id": "ROOM_ID",
+  "dept_id": "DEPARTMENT_ID",
   "reason": "Medical leave"
 }
 
 ###
 
-### Block a Room
+### 62. Report teacher absence (no substitute — system suggests one)
+# Website : HOD marks absent → system auto-suggests from same dept
+# Response includes both the saved override AND suggestions[]
+POST {{base}}/overrides/absence
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "date": "2026-09-15",
+  "original_teacher_id": "FACULTY_ID",
+  "slot": { "day": 1, "period": 2 },
+  "subject_id": "SUBJECT_ID",
+  "dept_id": "DEPARTMENT_ID",
+  "reason": "Medical leave"
+}
+
+###
+
+### 63. Block a room
+# Website : Admin → marks room unavailable for that day/slot
 POST {{base}}/overrides/room-block
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -511,7 +767,8 @@ Content-Type: application/json
 
 ###
 
-### Schedule Extra Class
+### 64. Schedule an extra/makeup class
+# Website : HOD → schedule a makeup class for a missed session
 POST {{base}}/overrides/extra-class
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -522,11 +779,204 @@ Content-Type: application/json
   "slot": { "day": 1, "period": 7 },
   "subject_id": "SUBJECT_ID",
   "room_id": "ROOM_ID",
-  "reason": "Makeup class for holiday"
+  "reason": "Makeup class for Independence Day holiday"
 }
 
 ###
 
-### Delete Override
+### 65. Delete override
 DELETE {{base}}/overrides/OVERRIDE_ID
 Authorization: Bearer {{token}}
+
+
+# ================================================================
+# EXPORTS
+# Purpose : Download timetable in shareable formats
+# Website : Timetable view page → "Export" dropdown
+#           PDF → print and display on notice boards
+#           iCal → import into Google Calendar / Outlook
+# ================================================================
+
+### 66. Export timetable as PDF
+# Opens/downloads a PDF with timetable grid
+GET {{base}}/exports/SCHEDULE_ID/pdf
+Authorization: Bearer {{token}}
+
+###
+
+### 67. Export timetable as iCal (.ics)
+# Import into Google Calendar / Outlook
+# Each session becomes a weekly recurring event
+GET {{base}}/exports/SCHEDULE_ID/ical?startDate=2026-07-01
+Authorization: Bearer {{token}}
+
+
+# ================================================================
+# NOTIFICATIONS
+# Purpose : In-app alerts for timetable events
+# Website : Bell icon in top navbar (shows unread count badge)
+#           Clicking opens notification dropdown/panel
+#           Types: timetable_published, timetable_generated,
+#                  override_created, solver_failed
+# ================================================================
+
+### 68. Get my notifications
+GET {{base}}/notifications
+Authorization: Bearer {{token}}
+
+###
+
+### 69. Get only unread notifications
+GET {{base}}/notifications?read=false
+Authorization: Bearer {{token}}
+
+###
+
+### 70. Get unread count (for navbar badge)
+GET {{base}}/notifications/unread-count
+Authorization: Bearer {{token}}
+
+###
+
+### 71. Mark all notifications as read
+PATCH {{base}}/notifications/mark-all-read
+Authorization: Bearer {{token}}
+
+###
+
+### 72. Mark single notification as read
+PATCH {{base}}/notifications/NOTIFICATION_ID/read
+Authorization: Bearer {{token}}
+
+
+# ================================================================
+# AUDIT LOG  [admin only]
+# Purpose : Track every data-changing action across the system
+# Website : Admin → Settings → Audit Log
+#           Who changed what, when, from which IP
+#           Useful for accountability and debugging
+#           Logged automatically for every POST / PATCH / DELETE
+# ================================================================
+
+### 73. View all audit logs
+GET {{base}}/audit
+Authorization: Bearer {{token}}
+
+###
+
+### 74. Filter by user
+GET {{base}}/audit?userId=USER_ID
+Authorization: Bearer {{token}}
+
+###
+
+### 75. Filter by HTTP method
+GET {{base}}/audit?method=DELETE
+Authorization: Bearer {{token}}
+
+###
+
+### 76. Filter with pagination
+GET {{base}}/audit?method=POST&page=1&limit=20
+Authorization: Bearer {{token}}
+
+
+# ================================================================
+# SECTIONS
+# Purpose : Class divisions within a department (e.g., CSE-Genius, CSE-Brilliant)
+# Website : Admin → Setup → Sections
+#           Each section gets its own timetable
+#           Sections can override the department's default subject list
+# ================================================================
+
+### 77. List all sections (filter by dept/semester/year)
+GET {{base}}/sections?dept_id=DEPARTMENT_ID&year=3
+Authorization: Bearer {{token}}
+
+###
+
+### 78. Get section by ID
+GET {{base}}/sections/SECTION_ID
+Authorization: Bearer {{token}}
+
+###
+
+### 79. Create a section
+POST {{base}}/sections
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Genius",
+  "dept_id": "DEPARTMENT_ID",
+  "semester_id": "SEMESTER_ID",
+  "year": 3,
+  "strength": 60,
+  "subjects": []
+}
+
+###
+
+### 80. Update section — assign specific subjects
+PATCH {{base}}/sections/SECTION_ID
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "strength": 65,
+  "subjects": ["SUBJECT_ID_1", "SUBJECT_ID_2"]
+}
+
+###
+
+### 81. Delete section
+DELETE {{base}}/sections/SECTION_ID
+Authorization: Bearer {{token}}
+
+
+# ================================================================
+# AI TOUCHPOINT 1 — FACULTY-SUBJECT ALLOCATION (Pre-Solve)
+# Purpose : Gemini AI proposes which faculty should teach which subjects
+#           before the solver runs. HOD reviews and tweaks.
+# Website : Admin/HOD → Timetable → "AI Suggest Allocation" button
+#           Shows a table: Subject | Suggested Faculty | Reason | Confidence
+#           HOD can accept as-is or change individual rows
+#           Then clicks "Generate Timetable" passing the confirmed allocation
+# ================================================================
+
+### 82. Get AI-suggested faculty-subject allocation
+# Returns: [{ subject_code, subject_name, faculty_id, faculty_name, reason, confidence }]
+GET {{base}}/faculty/suggest-allocation?dept_id=DEPARTMENT_ID&semester_id=SEMESTER_ID
+Authorization: Bearer {{token}}
+
+###
+
+### 83. Generate timetable WITH AI allocation (section-aware)
+# Pass the suggestions from #82 as faculty_allocation
+# solver uses these as hard pre-bindings (subject X must be taught by faculty Y)
+POST {{base}}/timetables/generate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "semester_id": "SEMESTER_ID",
+  "dept_id": "DEPARTMENT_ID",
+  "section_id": "SECTION_ID",
+  "faculty_allocation": [
+    { "subject_id": "SUBJECT_ID_1", "faculty_id": "FACULTY_ID_1" },
+    { "subject_id": "SUBJECT_ID_2", "faculty_id": "FACULTY_ID_2" }
+  ]
+}
+
+###
+
+### 84. Generate timetable for a section (no AI allocation)
+POST {{base}}/timetables/generate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "semester_id": "SEMESTER_ID",
+  "dept_id": "DEPARTMENT_ID",
+  "section_id": "SECTION_ID"
+}

@@ -1,5 +1,7 @@
 const AppError = require('../../common/errors/AppError');
 const repo = require('./timetable.repository');
+const { dispatchSolverJob } = require('./queue.service');
+const { explainConflict } = require('../../integrations/gemini');
 
 const getAll = async (query) => {
   const { semesterId, deptId, status, page = 1, limit = 20 } = query;
@@ -17,25 +19,80 @@ const getById = async (id) => {
   return schedule;
 };
 
-const generate = async ({ semester_id, dept_id }) => {
-  // Create a draft schedule shell
-  const schedule = await repo.createSchedule({ semester_id, dept_id, status: 'draft' });
+const generate = async ({ semester_id, dept_id, section_id, faculty_allocation }) => {
+  const scheduleData = { semester_id, dept_id, status: 'draft' };
+  if (section_id) scheduleData.section_id = section_id;
 
-  // Create a solver job (Python worker will pick this up via Redis in Phase 2)
+  const schedule = await repo.createSchedule(scheduleData);
+
   const job = await repo.createSolverJob({
     schedule_id: schedule._id,
     dept_id,
     status: 'pending',
-    queue_name: `solver:${dept_id}`,
+    queue_name: 'solver:jobs',
   });
 
-  return { scheduleId: schedule._id, jobId: job._id, status: 'pending' };
+  // Dispatch to Redis — Python worker picks this up
+  const payload = {
+    schedule_id: schedule._id.toString(),
+    job_id: job._id.toString(),
+    dept_id: dept_id.toString(),
+    semester_id: semester_id.toString(),
+  };
+  if (section_id) payload.section_id = section_id.toString();
+  // Optional: pass AI-suggested allocation so worker can pre-bind faculty to subjects
+  if (faculty_allocation && Array.isArray(faculty_allocation)) {
+    payload.faculty_allocation = faculty_allocation;
+  }
+
+  await dispatchSolverJob(payload);
+
+  return { scheduleId: schedule._id, jobId: job._id, status: 'pending', section_id: section_id || null };
 };
 
 const getStatus = async (scheduleId) => {
   const jobs = await repo.findJobsBySchedule(scheduleId);
   if (!jobs.length) throw new AppError('No jobs found for this schedule', 404, 'NOT_FOUND');
   return jobs;
+};
+
+// SSE: polls job status from DB every 2s and streams updates to client
+const streamStatus = async (scheduleId, send, onClose) => {
+  const interval = setInterval(async () => {
+    try {
+      const jobs = await repo.findJobsBySchedule(scheduleId);
+      if (!jobs.length) {
+        send('error', { message: 'No jobs found' });
+        clearInterval(interval);
+        onClose();
+        return;
+      }
+
+      const statuses = jobs.map((j) => ({
+        jobId: j._id,
+        dept_id: j.dept_id,
+        status: j.status,
+        error: j.error || null,
+      }));
+
+      const allSettled = jobs.every((j) => j.status === 'done' || j.status === 'failed');
+      const anyRunning = jobs.some((j) => j.status === 'running');
+      const anyFailed  = jobs.some((j) => j.status === 'failed');
+
+      if (anyRunning) send('running', { jobs: statuses });
+
+      if (allSettled) {
+        clearInterval(interval);
+        send(anyFailed ? 'failed' : 'completed', { jobs: statuses });
+        onClose();
+      }
+    } catch {
+      clearInterval(interval);
+      onClose();
+    }
+  }, 2000);
+
+  return () => clearInterval(interval);
 };
 
 const lock = async (scheduleId) => {
@@ -60,4 +117,17 @@ const publish = async (scheduleId) => {
   });
 };
 
-module.exports = { getAll, getById, generate, getStatus, lock, publish };
+const explainScheduleConflict = async (scheduleId) => {
+  const jobs = await repo.findJobsBySchedule(scheduleId);
+  const failedJobs = jobs.filter((j) => j.status === 'failed');
+  if (!failedJobs.length) throw new AppError('No failed jobs to explain', 400, 'NO_CONFLICT');
+
+  const explanation = await explainConflict({
+    schedule_id: scheduleId,
+    failed_jobs: failedJobs.map((j) => ({ dept_id: j.dept_id, error: j.error })),
+  });
+
+  return { explanation };
+};
+
+module.exports = { getAll, getById, generate, getStatus, streamStatus, lock, publish, explainScheduleConflict };

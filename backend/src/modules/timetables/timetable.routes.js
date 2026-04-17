@@ -8,6 +8,8 @@ router.get('/', controller.getAll);
 router.post('/generate', authorize('admin', 'hod'), controller.generate);
 router.get('/:scheduleId', controller.getById);
 router.get('/:scheduleId/status', controller.getStatus);
+router.get('/:scheduleId/stream', controller.stream);
+router.get('/:scheduleId/explain', controller.explainConflict);
 router.post('/:scheduleId/lock', authorize('admin', 'hod'), controller.lock);
 router.post('/:scheduleId/publish', authorize('admin'), controller.publish);
 
