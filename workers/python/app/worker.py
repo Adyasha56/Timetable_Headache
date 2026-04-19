@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import datetime
 import redis
 import pymongo
 from bson import ObjectId
@@ -27,7 +28,7 @@ def oid(s):
 
 
 def update_job(job_id, status, result=None, error=None, duration_ms=None):
-    update = {'status': status, 'updated_at': pymongo.ASCENDING}
+    update = {'status': status, 'updated_at': datetime.datetime.utcnow()}
     if result is not None:
         update['result'] = result
     if error is not None:

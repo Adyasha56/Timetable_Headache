@@ -117,7 +117,7 @@ def solve(faculty_list, subject_list, room_list, constraints, allocation_map=Non
 
     # 4. Faculty availability
     for f_idx, fac in enumerate(faculty_list):
-        avail = fac.get('availability', [[True] * SLOTS] * DAYS)
+        avail = fac.get('availability', [[True] * SLOTS for _ in range(DAYS)])
         for d in range(DAYS):
             row = avail[d] if d < len(avail) else [True] * SLOTS
             for t in range(SLOTS):
@@ -132,7 +132,7 @@ def solve(faculty_list, subject_list, room_list, constraints, allocation_map=Non
         required_type = subj.get('room_type_required')
         if required_type:
             for r_idx, room in enumerate(room_list):
-                if room.get('type') != required_type:
+                if room.get('type', '').lower() != required_type.lower():
                     for f in range(F):
                         for d in range(DAYS):
                             for t in range(SLOTS):
