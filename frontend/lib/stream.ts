@@ -11,7 +11,16 @@ export async function streamSse(
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
   });
-  if (!response.ok || !response.body) throw new Error("Unable to stream status");
+  if (!response.ok || !response.body) {
+    let message = "Unable to stream status";
+    try {
+      const body = (await response.json()) as { error?: { message?: string } };
+      message = body.error?.message ?? message;
+    } catch {
+      // ignore parse errors
+    }
+    throw new Error(message);
+  }
 
   const reader = response.body.getReader();
   const decoder = new TextDecoder();

@@ -4,35 +4,158 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
-import type { ResourceConfig } from "@/lib/resources";
+import type { ResourceConfig, FieldDef } from "@/lib/resources";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { NativeSelect } from "@/components/ui/select-native";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type RowRecord = Record<string, unknown> & { _id?: string; id?: string };
 
-// Helper to serialize objects and avoid "[object Object]" display
+// Serialize a value for display in a table cell
 function serializeValue(value: unknown): string {
-  if (value === null || value === undefined) return "-";
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-    return String(value);
+  if (value === null || value === undefined) return "—";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (typeof value === "string") {
+    // Format ISO date strings nicely
+    if (/^\d{4}-\d{2}-\d{2}T/.test(value)) {
+      return new Date(value).toLocaleDateString();
+    }
+    return value;
+  }
+  if (typeof value === "number") return String(value);
+  if (Array.isArray(value)) {
+    return value.map((v) => serializeValue(v)).join(", ") || "—";
   }
   if (typeof value === "object") {
-    if (Array.isArray(value)) {
-      return value.map(v => serializeValue(v)).join(", ") || "-";
-    }
     const obj = value as Record<string, unknown>;
-    // Try common display properties
-    const displayValue = obj.name || obj.code || obj.label || obj.title || JSON.stringify(obj);
-    return String(displayValue);
+    // Try common display properties in priority order
+    const display =
+      obj.name ??
+      obj.code ??
+      obj.label ??
+      obj.title ??
+      obj.email ??
+      (obj.year !== undefined && obj.semester !== undefined
+        ? `${obj.year} Sem ${obj.semester}`
+        : undefined);
+    return display !== undefined ? String(display) : "—";
   }
-  return "-";
+  return "—";
+}
+
+// A select field that fetches its own options from the API
+function RemoteSelectField({
+  field,
+  value,
+  onChange,
+}: {
+  field: FieldDef & { optionsEndpoint: string };
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const { data = [] } = useQuery({
+    queryKey: ["select-options", field.optionsEndpoint],
+    queryFn: () => api.get<RowRecord[]>(field.optionsEndpoint!),
+    staleTime: 60_000,
+  });
+
+  const options = (data as RowRecord[]).map((item) => {
+    const label = field.optionLabelFormat
+      ? field.optionLabelFormat(item as Record<string, unknown>)
+      : String(item[field.optionLabel ?? "name"] ?? item._id ?? "");
+    return { label, value: String(item[field.optionValue ?? "_id"] ?? "") };
+  });
+
+  return (
+    <NativeSelect
+      options={options}
+      value={value}
+      onChange={onChange}
+      placeholder={field.placeholder ?? `Select ${field.label.toLowerCase()}…`}
+    />
+  );
+}
+
+// A select field with static options baked into the field definition
+function StaticSelectField({
+  field,
+  value,
+  onChange,
+}: {
+  field: FieldDef & { options: Array<{ label: string; value: string }> };
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <NativeSelect
+      options={field.options}
+      value={value}
+      onChange={onChange}
+      placeholder={field.placeholder ?? `Select ${field.label.toLowerCase()}…`}
+    />
+  );
+}
+
+function FieldInput({
+  field,
+  value,
+  onChange,
+}: {
+  field: FieldDef;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const f = field;
+
+  if (f.type === "select") {
+    if (f.optionsEndpoint) {
+      return (
+        <RemoteSelectField
+          field={f as FieldDef & { optionsEndpoint: string }}
+          value={value}
+          onChange={onChange}
+        />
+      );
+    }
+    if (f.options) {
+      return (
+        <StaticSelectField
+          field={f as FieldDef & { options: Array<{ label: string; value: string }> }}
+          value={value}
+          onChange={onChange}
+        />
+      );
+    }
+
+  }
+
+  if (f.type === "textarea") {
+    return (
+      <Textarea
+        placeholder={f.placeholder ?? f.label}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={3}
+      />
+    );
+  }
+
+  return (
+    <Input
+      type={f.type ?? "text"}
+      placeholder={f.placeholder ?? f.label}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  );
 }
 
 export function ResourcePanel({ config }: { config: ResourceConfig }) {
   const queryClient = useQueryClient();
   const [formState, setFormState] = useState<Record<string, string>>({});
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const queryKey = ["resource", config.endpoint];
   const { data = [], isLoading } = useQuery({
@@ -48,93 +171,153 @@ export function ResourcePanel({ config }: { config: ResourceConfig }) {
       return api.post(config.endpoint, payload);
     },
     onSuccess: () => {
-      toast.success(`${config.title} saved`);
+      toast.success(`${config.title.replace(/s$/, "")} saved`);
       setFormState({});
       queryClient.invalidateQueries({ queryKey });
+      // Also invalidate select-options caches so dropdowns refresh
+      queryClient.invalidateQueries({ queryKey: ["select-options", config.endpoint] });
     },
     onError: (error: Error) => toast.error(error.message),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.del(`${config.endpoint}/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey }),
-    onError: (error: Error) => toast.error(error.message),
+    onSuccess: () => {
+      toast.success("Record deleted");
+      setPendingDeleteId(null);
+      queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: ["select-options", config.endpoint] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+      setPendingDeleteId(null);
+    },
   });
 
-  const columns = useMemo(() => {
-    if (!data.length) return config.fields.slice(0, 3).map((item) => item.key);
-    return Object.keys(data[0]).filter((key) => !["_id", "__v"].includes(key)).slice(0, 5);
-  }, [config.fields, data]);
+  const handleCreate = () => {
+    const missing = config.fields.filter((f) => !formState[f.key] || formState[f.key] === "");
+    if (missing.length > 0 && config.fields.length > 0) {
+      toast.error(`Please fill in: ${missing.map((f) => f.label).join(", ")}`);
+      return;
+    }
+    createMutation.mutate();
+  };
+
+  // Use config-defined display columns, falling back to field keys
+  const displayColumns = useMemo(
+    () =>
+      config.displayColumns ??
+      config.fields.slice(0, 5).map((f) => ({ key: f.key, label: f.label })),
+    [config.displayColumns, config.fields],
+  );
 
   return (
-    <div className="space-y-4">
-      <div className="grid gap-3 md:grid-cols-2">
-        {config.fields.map((field) => (
-          <div key={field.key} className={field.type === "textarea" ? "md:col-span-2" : ""}>
-            {field.type === "textarea" ? (
-              <Textarea
-                placeholder={field.placeholder ?? field.label}
-                value={formState[field.key] ?? ""}
-                onChange={(event) =>
-                  setFormState((prev) => ({ ...prev, [field.key]: event.target.value }))
-                }
-              />
-            ) : (
-              <Input
-                type={field.type ?? "text"}
-                placeholder={field.placeholder ?? field.label}
-                value={formState[field.key] ?? ""}
-                onChange={(event) =>
-                  setFormState((prev) => ({ ...prev, [field.key]: event.target.value }))
-                }
-              />
-            )}
-          </div>
-        ))}
-      </div>
+    <div className="space-y-6">
       {config.fields.length > 0 && (
-        <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>
-          Create {config.title.slice(0, -1)}
-        </Button>
+        <div className="rounded-lg border p-4">
+          <h3 className="mb-4 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            Add New {config.title.replace(/s$/, "")}
+          </h3>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {config.fields.map((field) => (
+              <div
+                key={field.key}
+                className={field.type === "textarea" ? "sm:col-span-2" : ""}
+              >
+                <div className="mb-1 flex items-center gap-1">
+                  <label className="text-sm font-medium">{field.label}</label>
+                  {field.helpText && (
+                    <span
+                      title={field.helpText}
+                      className="cursor-help text-xs text-muted-foreground"
+                    >
+                      ⓘ
+                    </span>
+                  )}
+                </div>
+                <FieldInput
+                  field={field}
+                  value={formState[field.key] ?? ""}
+                  onChange={(v) => setFormState((prev) => ({ ...prev, [field.key]: v }))}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="mt-4">
+            <Button onClick={handleCreate} disabled={createMutation.isPending}>
+              {createMutation.isPending ? "Saving…" : `Add ${config.title.replace(/s$/, "")}`}
+            </Button>
+          </div>
+        </div>
       )}
+
       <Table>
         <TableHeader>
           <TableRow>
-            {columns.map((column) => (
-              <TableHead key={column} className="capitalize">
-                {column.replaceAll("_", " ")}
-              </TableHead>
+            {displayColumns.map((col) => (
+              <TableHead key={col.key}>{col.label}</TableHead>
             ))}
-            <TableHead>Actions</TableHead>
+            {config.fields.length > 0 && <TableHead className="w-28">Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
           {isLoading && (
             <TableRow>
-              <TableCell colSpan={columns.length + 1}>Loading...</TableCell>
+              <TableCell colSpan={displayColumns.length + 1} className="py-8 text-center text-muted-foreground">
+                Loading…
+              </TableCell>
             </TableRow>
           )}
-          {!isLoading && data.length === 0 && (
+          {!isLoading && (data as RowRecord[]).length === 0 && (
             <TableRow>
-              <TableCell colSpan={columns.length + 1}>No records found.</TableCell>
+              <TableCell colSpan={displayColumns.length + 1}>
+                <div className="flex flex-col items-center gap-2 py-10 text-muted-foreground">
+                  <p className="text-sm font-medium">{config.emptyMessage ?? "No records found."}</p>
+                </div>
+              </TableCell>
             </TableRow>
           )}
-          {data.map((row) => {
+          {(data as RowRecord[]).map((row) => {
             const id = String(row._id ?? row.id ?? "");
+            const isPendingDelete = pendingDeleteId === id;
             return (
               <TableRow key={id}>
-                {columns.map((column) => (
-                  <TableCell key={`${id}-${column}`}>{serializeValue(row[column])}</TableCell>
+                {displayColumns.map((col) => (
+                  <TableCell key={`${id}-${col.key}`} className="max-w-50 truncate">
+                    {serializeValue(row[col.key])}
+                  </TableCell>
                 ))}
-                <TableCell>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => id && deleteMutation.mutate(id)}
-                  >
-                    Delete
-                  </Button>
-                </TableCell>
+                {config.fields.length > 0 && (
+                  <TableCell>
+                    {isPendingDelete ? (
+                      <div className="flex gap-1">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => deleteMutation.mutate(id)}
+                          disabled={deleteMutation.isPending}
+                        >
+                          {deleteMutation.isPending ? "…" : "Confirm"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPendingDeleteId(null)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => id && setPendingDeleteId(id)}
+                      >
+                        Delete
+                      </Button>
+                    )}
+                  </TableCell>
+                )}
               </TableRow>
             );
           })}

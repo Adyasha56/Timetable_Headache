@@ -74,10 +74,12 @@ const exportICal = async (scheduleId, semesterStartDate, res) => {
     const faculty = s.faculty_id?.name || '';
     const room = s.room_id?.name || '';
 
-    // Find next occurrence of this day from startDate
-    const targetDay = s.day === 0 ? 7 : s.day; // 1=Mon 6=Sat
+    // Find first occurrence of this weekday on or after startDate
+    // DB day encoding: 1=Mon … 6=Sat; JS getDay(): 0=Sun, 1=Mon … 6=Sat
+    // Convert Sunday (0) to 7 so ISO week arithmetic works cleanly
+    const targetDay = s.day; // already 1=Mon … 6=Sat
     const startDay = startDate.getDay() === 0 ? 7 : startDate.getDay();
-    const daysAhead = ((targetDay - startDay + 7) % 7) || 7;
+    const daysAhead = (targetDay - startDay + 7) % 7; // 0 means startDate itself is that weekday
 
     const eventDate = new Date(startDate);
     eventDate.setDate(startDate.getDate() + daysAhead);

@@ -16,8 +16,8 @@ type LoginResponse = {
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("admin@gift.edu.in");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const login = async () => {
@@ -40,9 +40,29 @@ export default function LoginPage() {
         <CardHeader>
           <CardTitle>Sign in to Timetable Optimizer</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
-          <Input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password" />
+        <CardContent className="space-y-4">
+          <div className="space-y-1">
+            <label className="text-sm font-medium" htmlFor="email">Email</label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@institution.edu"
+              onKeyDown={(e) => e.key === "Enter" && login()}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium" htmlFor="password">Password</label>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              onKeyDown={(e) => e.key === "Enter" && login()}
+            />
+          </div>
           <Button className="w-full" onClick={login} disabled={loading}>
             {loading ? "Signing in..." : "Sign in"}
           </Button>
