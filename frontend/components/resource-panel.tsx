@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Trash2, Check, X } from "lucide-react";
 import { api } from "@/lib/api";
 import type { ResourceConfig, FieldDef } from "@/lib/resources";
 import { Button } from "@/components/ui/button";
@@ -296,24 +297,28 @@ export function ResourcePanel({ config }: { config: ResourceConfig }) {
                           size="sm"
                           onClick={() => deleteMutation.mutate(id)}
                           disabled={deleteMutation.isPending}
+                          title="Confirm delete"
                         >
-                          {deleteMutation.isPending ? "…" : "Confirm"}
+                          <Check className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => setPendingDeleteId(null)}
+                          title="Cancel"
                         >
-                          Cancel
+                          <X className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     ) : (
                       <Button
-                        variant="destructive"
+                        variant="ghost"
                         size="sm"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10 px-2"
                         onClick={() => id && setPendingDeleteId(id)}
+                        title="Delete"
                       >
-                        Delete
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     )}
                   </TableCell>
