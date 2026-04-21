@@ -4,6 +4,7 @@ const SolverJob = require('./solver-job.model');
 const findSchedules = async (filter = {}, page = 1, limit = 20) => {
   const [data, total] = await Promise.all([
     Schedule.find(filter)
+      .sort({ created_at: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
       .populate('semester_id', 'year semester')
@@ -25,6 +26,8 @@ const createSchedule = (data) => Schedule.create(data);
 
 const updateSchedule = (id, data) => Schedule.findByIdAndUpdate(id, data, { new: true });
 
+const deleteSchedule = (id) => Schedule.findByIdAndDelete(id);
+
 const createSolverJob = (data) => SolverJob.create(data);
 
 const findJobsBySchedule = (scheduleId) => SolverJob.find({ schedule_id: scheduleId });
@@ -38,6 +41,7 @@ module.exports = {
   findScheduleById,
   createSchedule,
   updateSchedule,
+  deleteSchedule,
   createSolverJob,
   findJobsBySchedule,
   findJobById,

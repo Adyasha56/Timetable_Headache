@@ -95,6 +95,16 @@ const streamStatus = async (scheduleId, send, onClose) => {
   return () => clearInterval(interval);
 };
 
+const remove = async (scheduleId) => {
+  const schedule = await repo.findScheduleById(scheduleId);
+  if (!schedule) throw new AppError('Schedule not found', 404, 'NOT_FOUND');
+  if (schedule.status === 'published') {
+    throw new AppError('Published schedules cannot be deleted', 400, 'INVALID_STATE');
+  }
+  await repo.deleteSchedule(scheduleId);
+  return { deleted: true };
+};
+
 const lock = async (scheduleId) => {
   const schedule = await repo.findScheduleById(scheduleId);
   if (!schedule) throw new AppError('Schedule not found', 404, 'NOT_FOUND');
@@ -130,4 +140,4 @@ const explainScheduleConflict = async (scheduleId) => {
   return { explanation };
 };
 
-module.exports = { getAll, getById, generate, getStatus, streamStatus, lock, publish, explainScheduleConflict };
+module.exports = { getAll, getById, generate, getStatus, streamStatus, remove, lock, publish, explainScheduleConflict };

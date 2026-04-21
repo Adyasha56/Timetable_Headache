@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
+import { getToken } from "@/lib/auth";
 import { API_BASE_URL, DAYS, SLOTS } from "@/lib/constants";
 import { streamSse } from "@/lib/stream";
 import { Button } from "@/components/ui/button";
@@ -14,6 +16,7 @@ import { NativeSelect } from "@/components/ui/select-native";
 type SessionItem = {
   day: number;
   slot: number;
+  duration_slots?: number;
   subject_id?: { name?: string; code?: string } | string;
   faculty_id?: { name?: string } | string;
   room_id?: { name?: string } | string;
@@ -22,14 +25,14 @@ type SessionItem = {
 type ScheduleRow = {
   _id: string;
   status: string;
+  created_at?: string;
   dept_id?: { name?: string; code?: string } | string;
   semester_id?: { year?: number; semester?: number } | string;
   sessions?: SessionItem[];
 };
 
-type SolverStatus = {
-  jobs?: Array<{ status: string; error?: string; duration_ms?: number }>;
-};
+type SolverJob = { status: string; error?: string; duration_ms?: number };
+
 
 type Department = { _id: string; name: string; code: string };
 type Calendar = { _id: string; year: number; semester: number };
@@ -81,6 +84,8 @@ export function TimetablePanel() {
   // Faculty view filter
   const [viewMode, setViewMode] = useState<"grid" | "faculty">("grid");
   const [selectedFaculty, setSelectedFaculty] = useState("");
+  // Ref to scroll to timetable grid when a schedule is viewed
+  const timetableGridRef = useRef<HTMLDivElement>(null);
 
   // Fetch departments and calendars for dropdowns
   const { data: departments = [] } = useQuery({
@@ -119,7 +124,7 @@ export function TimetablePanel() {
     queryKey: ["schedule-status", scheduleId],
     enabled: Boolean(scheduleId) && (solverProgress === "pending" || solverProgress === "running"),
     refetchInterval: 3000,
-    queryFn: () => api.get<SolverStatus>(`/timetables/${scheduleId}/status`),
+    queryFn: () => api.get<SolverJob[]>(`/timetables/${scheduleId}/status`),
   });
 
   // Timetable grid matrix
@@ -129,6 +134,18 @@ export function TimetablePanel() {
       map.set(`${item.day}-${item.slot}`, item),
     );
     return map;
+  }, [schedule.data?.sessions]);
+
+  // Cells that are consumed by a multi-slot (lab) session rowspan — should not render a <td>
+  const skipCells = useMemo(() => {
+    const skips = new Set<string>();
+    (schedule.data?.sessions ?? []).forEach((s) => {
+      const dur = s.duration_slots ?? 1;
+      for (let i = 1; i < dur; i++) {
+        skips.add(`${s.day}-${s.slot + i}`);
+      }
+    });
+    return skips;
   }, [schedule.data?.sessions]);
 
   // All unique faculty in current schedule (for faculty view)
@@ -142,6 +159,31 @@ export function TimetablePanel() {
     });
     return Array.from(seen.entries()).map(([k, v]) => ({ label: v, value: k }));
   }, [schedule.data?.sessions]);
+
+  // Authenticated file download (avoids window.open which strips the Bearer token)
+  const handleExport = async (path: string, filename: string) => {
+    try {
+      const token = getToken();
+      const res = await fetch(`${API_BASE_URL}${path}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        toast.error("Export failed — please try again");
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Export failed");
+    }
+  };
 
   const generate = useMutation({
     mutationFn: () =>
@@ -216,6 +258,19 @@ export function TimetablePanel() {
       setConstraintLoading(false);
     }
   };
+
+  const deleteSchedule = useMutation({
+    mutationFn: (id: string) => api.del(`/timetables/${id}`),
+    onSuccess: (_, id) => {
+      toast.success("Timetable deleted");
+      if (scheduleId === id) {
+        setScheduleId("");
+        setSolverProgress("idle");
+      }
+      queryClient.invalidateQueries({ queryKey: ["timetables"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
 
   const deptOptions = (departments as Department[]).map((d) => ({
     label: `${d.name} (${d.code})`,
@@ -323,18 +378,14 @@ export function TimetablePanel() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  window.open(`${API_BASE_URL}/exports/${scheduleId}/pdf`, "_blank")
-                }
+                onClick={() => handleExport(`/exports/${scheduleId}/pdf`, `timetable-${scheduleId}.pdf`)}
               >
                 Export PDF
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  window.open(`${API_BASE_URL}/exports/${scheduleId}/ical`, "_blank")
-                }
+                onClick={() => handleExport(`/exports/${scheduleId}/ical`, `timetable-${scheduleId}.ics`)}
               >
                 Export to Calendar
               </Button>
@@ -350,6 +401,7 @@ export function TimetablePanel() {
             <CardTitle>Add a Scheduling Rule</CardTitle>
             <p className="text-sm text-muted-foreground">
               Describe a scheduling constraint in plain English. The system will parse and save it automatically.
+              Saved constraints are <strong>automatically applied</strong> the next time you generate a timetable for this department and semester.
             </p>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -390,6 +442,12 @@ export function TimetablePanel() {
                   typeof t.semester_id === "object"
                     ? `${t.semester_id?.year ?? ""} Sem ${t.semester_id?.semester ?? ""}`
                     : "—";
+                const createdAt = t.created_at
+                  ? new Date(t.created_at).toLocaleString("en-IN", {
+                      day: "2-digit", month: "short", year: "numeric",
+                      hour: "2-digit", minute: "2-digit",
+                    })
+                  : null;
                 return (
                   <div
                     key={t._id}
@@ -399,28 +457,44 @@ export function TimetablePanel() {
                       <p className="text-sm font-medium">
                         {deptName} — {semLabel}
                       </p>
-                      <StatusBadge status={t.status} />
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <StatusBadge status={t.status} />
+                        {createdAt && (
+                          <span className="text-xs text-muted-foreground">{createdAt}</span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => {
                           setScheduleId(t._id);
                           setSolverProgress("done");
+                          setSelectedFaculty("");
+                          setTimeout(() => timetableGridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
                         }}
                       >
                         View
                       </Button>
-                      {t.status === "draft" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleExport(`/exports/${t._id}/pdf`, `timetable-${t._id}.pdf`)}
+                      >
+                        PDF
+                      </Button>
+                      {t.status !== "published" && (
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10 px-2"
                           onClick={() => {
-                            window.open(`${API_BASE_URL}/exports/${t._id}/pdf`, "_blank");
+                            if (confirm("Delete this timetable?")) deleteSchedule.mutate(t._id);
                           }}
+                          disabled={deleteSchedule.isPending}
                         >
-                          PDF
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
                     </div>
@@ -434,6 +508,7 @@ export function TimetablePanel() {
 
       {/* ── Timetable Grid ── */}
       {scheduleId && (
+        <div ref={timetableGridRef}>
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between flex-wrap gap-2">
@@ -493,14 +568,18 @@ export function TimetablePanel() {
                           {slot.label}
                         </td>
                         {DAYS.map((_, dayIndex) => {
-                          const item = matrix.get(`${dayIndex + 1}-${slotIndex}`);
+                          const cellKey = `${dayIndex + 1}-${slotIndex}`;
+                          if (skipCells.has(cellKey)) return null;
+                          const item = matrix.get(cellKey);
+                          const dur = item?.duration_slots ?? 1;
                           return (
                             <td
                               key={`${slot.start}-${dayIndex}`}
+                              rowSpan={dur > 1 ? dur : undefined}
                               className="border px-2 py-1.5 align-top min-w-28"
                             >
                               {item ? (
-                                <div className="rounded bg-primary/10 px-2 py-1">
+                                <div className={`rounded px-2 py-1 h-full ${dur > 1 ? "bg-blue-50 border-l-2 border-blue-400" : "bg-primary/10"}`}>
                                   <p className="font-medium text-xs">
                                     {getSessionLabel(item.subject_id)}
                                   </p>
@@ -510,6 +589,9 @@ export function TimetablePanel() {
                                   <p className="text-xs text-muted-foreground">
                                     {getSessionLabel(item.room_id)}
                                   </p>
+                                  {dur > 1 && (
+                                    <p className="text-xs text-blue-500 font-medium mt-0.5">{dur}h Lab</p>
+                                  )}
                                 </div>
                               ) : (
                                 <span className="text-muted-foreground/30 text-xs">—</span>
@@ -530,61 +612,54 @@ export function TimetablePanel() {
                   <p className="py-4 text-sm text-muted-foreground">
                     Select a faculty member above to see their schedule.
                   </p>
-                ) : (
-                  <>
-                    <h4 className="font-medium">{selectedFaculty}&apos;s Schedule</h4>
-                    {Array.from(matrix.values())
-                      .filter(
-                        (s) =>
-                          typeof s.faculty_id === "object" &&
-                          s.faculty_id?.name === selectedFaculty,
-                      )
-                      .sort((a, b) => a.day * 10 + a.slot - (b.day * 10 + b.slot))
-                      .map((s, i) => (
-                        <div key={i} className="flex items-center gap-3 rounded-md border px-3 py-2 text-sm">
-                          <span className="w-10 font-medium text-muted-foreground">
-                            {DAYS[(s.day ?? 1) - 1]}
-                          </span>
-                          <span className="w-28 text-muted-foreground">
-                            {SLOTS[s.slot ?? 0]?.label ?? `Slot ${s.slot}`}
-                          </span>
-                          <span className="font-medium">{getSessionLabel(s.subject_id)}</span>
-                          <span className="text-muted-foreground">{getSessionLabel(s.room_id)}</span>
-                        </div>
-                      ))}
-                    {Array.from(matrix.values()).filter(
+                ) : (() => {
+                  const facultySessions = (schedule.data?.sessions ?? [])
+                    .filter(
                       (s) =>
                         typeof s.faculty_id === "object" &&
                         s.faculty_id?.name === selectedFaculty,
-                    ).length === 0 && (
-                      <p className="py-4 text-sm text-muted-foreground">
-                        No sessions found for {selectedFaculty}.
-                      </p>
-                    )}
-                  </>
-                )}
+                    )
+                    .sort((a, b) => a.day * 10 + a.slot - (b.day * 10 + b.slot));
+                  return (
+                    <>
+                      <h4 className="font-medium">{selectedFaculty}&apos;s Schedule</h4>
+                      {facultySessions.length === 0 ? (
+                        <p className="py-4 text-sm text-muted-foreground">
+                          No sessions found for {selectedFaculty}.
+                        </p>
+                      ) : (
+                        facultySessions.map((s, i) => (
+                          <div key={i} className="flex items-center gap-3 rounded-md border px-3 py-2 text-sm">
+                            <span className="w-10 font-medium text-muted-foreground">
+                              {DAYS[(s.day ?? 1) - 1]}
+                            </span>
+                            <span className="w-28 text-muted-foreground">
+                              {SLOTS[s.slot ?? 0]?.label ?? `Slot ${s.slot}`}
+                            </span>
+                            <span className="font-medium">{getSessionLabel(s.subject_id)}</span>
+                            <span className="text-muted-foreground">{getSessionLabel(s.room_id)}</span>
+                          </div>
+                        ))
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             )}
 
-            {/* Solver status info */}
-            {scheduleId && status.data && (
+            {/* Solver status info — only shown during/after a fresh generation */}
+            {scheduleId && solverProgress !== "idle" && Array.isArray(status.data) && status.data.length > 0 && (
               <div className="mt-4 flex items-center gap-2 border-t pt-3 text-xs text-muted-foreground">
-                <span>Status:</span>
-                <StatusBadge
-                  status={
-                    (status.data as SolverStatus)?.jobs?.[0]?.status ?? "unknown"
-                  }
-                />
-                {(status.data as SolverStatus)?.jobs?.[0]?.duration_ms && (
-                  <span>
-                    · Solved in{" "}
-                    {(((status.data as SolverStatus)?.jobs?.[0]?.duration_ms ?? 0) / 1000).toFixed(1)}s
-                  </span>
+                <span>Solver:</span>
+                <StatusBadge status={(status.data[0] as SolverJob).status} />
+                {(status.data[0] as SolverJob).duration_ms && (
+                  <span>· Solved in {(((status.data[0] as SolverJob).duration_ms ?? 0) / 1000).toFixed(1)}s</span>
                 )}
               </div>
             )}
           </CardContent>
         </Card>
+        </div>
       )}
     </div>
   );

@@ -43,4 +43,8 @@ const explainConflict = async (req, res, next) => {
   try { success(res, await service.explainScheduleConflict(req.params.scheduleId)); } catch (err) { next(err); }
 };
 
-module.exports = { getAll, getById, generate, getStatus, stream, lock, publish, explainConflict };
+const remove = async (req, res, next) => {
+  try { success(res, await service.remove(req.params.scheduleId)); } catch (err) { next(err); }
+};
+
+module.exports = { getAll, getById, generate, getStatus, stream, lock, publish, explainConflict, remove };

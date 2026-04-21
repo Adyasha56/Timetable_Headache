@@ -9,6 +9,7 @@ const sessionSchema = new mongoose.Schema(
     slot: Number,
     is_locked: { type: Boolean, default: false },
     batch: { type: Number, default: 1 },
+    duration_slots: { type: Number, default: 1 },
   },
   { _id: false }
 );
