@@ -2,10 +2,10 @@ const AppError = require('../../common/errors/AppError');
 const repo = require('./section.repository');
 
 const getAll = async (query) => {
-  const { dept_id, semester_id, year, page = 1, limit = 20 } = query;
+  const { dept_id, semester, year, page = 1, limit = 20 } = query;
   const filter = {};
   if (dept_id) filter.dept_id = dept_id;
-  if (semester_id) filter.semester_id = semester_id;
+  if (semester) filter.semester = parseInt(semester);
   if (year) filter.year = parseInt(year);
   const [data, total] = await repo.findAll(filter, parseInt(page), parseInt(limit));
   return { data, total, page: parseInt(page), limit: parseInt(limit) };
@@ -30,4 +30,10 @@ const remove = async (id) => {
   if (!section) throw new AppError('Section not found', 404, 'NOT_FOUND');
 };
 
-module.exports = { getAll, getById, create, update, remove };
+const setSubjects = async (id, subjectIds) => {
+  const section = await repo.update(id, { subjects: subjectIds });
+  if (!section) throw new AppError('Section not found', 404, 'NOT_FOUND');
+  return section;
+};
+
+module.exports = { getAll, getById, create, update, remove, setSubjects };

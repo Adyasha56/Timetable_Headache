@@ -28,6 +28,7 @@ type ScheduleRow = {
   created_at?: string;
   dept_id?: { name?: string; code?: string } | string;
   semester_id?: { year?: number; semester?: number } | string;
+  section_id?: { name?: string; year?: number } | string | null;
   sessions?: SessionItem[];
 };
 
@@ -100,10 +101,9 @@ export function TimetablePanel() {
 
   // Sections filtered by selected department
   const { data: sections = [] } = useQuery({
-    queryKey: ["sections", deptId],
-    queryFn: () => api.get<Section[]>("/sections"),
+    queryKey: ["sections", deptId, semesterId],
+    queryFn: () => api.get<Section[]>(`/sections?dept_id=${deptId}`),
     enabled: Boolean(deptId),
-    select: (data) => (data as Section[]).filter((s) => s.dept_id === deptId || !deptId),
   });
 
   // Existing timetables list
@@ -278,21 +278,18 @@ export function TimetablePanel() {
   }));
 
   const semesterOptions = (calendars as Calendar[]).map((c) => ({
-    label: `${c.year} — Semester ${c.semester}`,
+    label: `${c.year} — ${c.semester === 1 ? "Odd Sem" : "Even Sem"}`,
     value: c._id,
   }));
 
-  const sectionOptions = [
-    { label: "All students (no section)", value: "" },
-    ...(sections as Section[]).map((s) => ({ label: s.name, value: s._id })),
-  ];
+  const sectionOptions = (sections as Section[]).map((s) => ({ label: s.name, value: s._id }));
 
   const selectedDeptName =
     (departments as Department[]).find((d) => d._id === deptId)?.name ?? "";
-  const selectedSemLabel =
-    (calendars as Calendar[]).find((c) => c._id === semesterId)
-      ? `Semester ${(calendars as Calendar[]).find((c) => c._id === semesterId)!.semester} — ${(calendars as Calendar[]).find((c) => c._id === semesterId)!.year}`
-      : "";
+  const selectedSemLabel = (() => {
+    const c = (calendars as Calendar[]).find((c) => c._id === semesterId);
+    return c ? `${c.year} — ${c.semester === 1 ? "Odd Sem" : "Even Sem"}` : "";
+  })();
 
   return (
     <div className="space-y-6">
@@ -435,13 +432,17 @@ export function TimetablePanel() {
             <div className="space-y-2">
               {(timetables as ScheduleRow[]).map((t) => {
                 const deptName =
-                  typeof t.dept_id === "object"
-                    ? (t.dept_id?.name ?? t.dept_id?.code ?? "—")
+                  t.dept_id && typeof t.dept_id === "object"
+                    ? (t.dept_id.name ?? t.dept_id.code ?? "—")
                     : "—";
                 const semLabel =
-                  typeof t.semester_id === "object"
-                    ? `${t.semester_id?.year ?? ""} Sem ${t.semester_id?.semester ?? ""}`
+                  t.semester_id && typeof t.semester_id === "object"
+                    ? `${t.semester_id.year ?? "?"} — ${t.semester_id.semester === 1 ? "Odd Sem" : "Even Sem"}`
                     : "—";
+                const sectionLabel =
+                  t.section_id && typeof t.section_id === "object"
+                    ? `Section ${t.section_id.name ?? ""}${t.section_id.year ? ` (Yr ${t.section_id.year})` : ""}`
+                    : null;
                 const createdAt = t.created_at
                   ? new Date(t.created_at).toLocaleString("en-IN", {
                       day: "2-digit", month: "short", year: "numeric",
@@ -456,6 +457,7 @@ export function TimetablePanel() {
                     <div className="space-y-0.5">
                       <p className="text-sm font-medium">
                         {deptName} — {semLabel}
+                        {sectionLabel && <span className="ml-1 text-primary font-semibold">· {sectionLabel}</span>}
                       </p>
                       <div className="flex items-center gap-2 flex-wrap">
                         <StatusBadge status={t.status} />
@@ -490,7 +492,10 @@ export function TimetablePanel() {
                           size="sm"
                           className="text-destructive hover:text-destructive hover:bg-destructive/10 px-2"
                           onClick={() => {
-                            if (confirm("Delete this timetable?")) deleteSchedule.mutate(t._id);
+                            toast("Delete this timetable?", {
+                              action: { label: "Delete", onClick: () => deleteSchedule.mutate(t._id) },
+                              cancel: { label: "Cancel", onClick: () => {} },
+                            });
                           }}
                           disabled={deleteSchedule.isPending}
                         >
@@ -572,6 +577,9 @@ export function TimetablePanel() {
                           if (skipCells.has(cellKey)) return null;
                           const item = matrix.get(cellKey);
                           const dur = item?.duration_slots ?? 1;
+                          const subj = item?.subject_id;
+                          const subjCode = typeof subj === "object" && subj ? (subj.code ?? subj.name ?? "—") : "—";
+                          const subjName = typeof subj === "object" && subj && subj.code ? subj.name : null;
                           return (
                             <td
                               key={`${slot.start}-${dayIndex}`}
@@ -580,18 +588,11 @@ export function TimetablePanel() {
                             >
                               {item ? (
                                 <div className={`rounded px-2 py-1 h-full ${dur > 1 ? "bg-blue-50 border-l-2 border-blue-400" : "bg-primary/10"}`}>
-                                  <p className="font-medium text-xs">
-                                    {getSessionLabel(item.subject_id)}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {getFacultyLabel(item.faculty_id)}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {getSessionLabel(item.room_id)}
-                                  </p>
-                                  {dur > 1 && (
-                                    <p className="text-xs text-blue-500 font-medium mt-0.5">{dur}h Lab</p>
-                                  )}
+                                  <p className="font-semibold text-xs leading-tight">{subjCode}</p>
+                                  {subjName && <p className="text-xs text-muted-foreground leading-tight truncate">{subjName}</p>}
+                                  <p className="text-xs text-muted-foreground leading-tight">{getFacultyLabel(item.faculty_id)}</p>
+                                  <p className="text-xs text-muted-foreground leading-tight">{getSessionLabel(item.room_id)}</p>
+                                  {dur > 1 && <p className="text-xs text-blue-500 font-medium mt-0.5">{dur}h Lab</p>}
                                 </div>
                               ) : (
                                 <span className="text-muted-foreground/30 text-xs">—</span>

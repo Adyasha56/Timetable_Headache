@@ -2,6 +2,8 @@ const AppError = require('../../common/errors/AppError');
 const repo = require('./timetable.repository');
 const { dispatchSolverJob } = require('./queue.service');
 const { explainConflict } = require('../../integrations/gemini');
+const notificationService = require('../notifications/notification.service');
+const User = require('../users/user.model');
 
 const getAll = async (query) => {
   const { semesterId, deptId, status, page = 1, limit = 20 } = query;
@@ -120,11 +122,32 @@ const publish = async (scheduleId) => {
   if (schedule.status === 'published') {
     throw new AppError('Schedule is already published', 400, 'INVALID_STATE');
   }
-  return repo.updateSchedule(scheduleId, {
+  const updated = await repo.updateSchedule(scheduleId, {
     status: 'published',
     published_at: new Date(),
     version: schedule.version + 1,
   });
+
+  // Notify all faculty in this department
+  try {
+    const deptId = schedule.dept_id?._id ?? schedule.dept_id;
+    const facultyUsers = await User.find({ dept_id: deptId, role: 'faculty', status: 'active' }, '_id');
+    const deptName = schedule.dept_id?.name ?? 'your department';
+    await Promise.all(
+      facultyUsers.map((u) =>
+        notificationService.create(
+          u._id,
+          'timetable_published',
+          'Timetable Published',
+          `The timetable for ${deptName} has been published.`,
+          schedule._id,
+          'Schedule'
+        )
+      )
+    );
+  } catch (_) { /* non-critical — don't fail publish if notification errors */ }
+
+  return updated;
 };
 
 const explainScheduleConflict = async (scheduleId) => {

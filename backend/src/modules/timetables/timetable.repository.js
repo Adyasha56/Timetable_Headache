@@ -8,7 +8,8 @@ const findSchedules = async (filter = {}, page = 1, limit = 20) => {
       .skip((page - 1) * limit)
       .limit(limit)
       .populate('semester_id', 'year semester')
-      .populate('dept_id', 'name code'),
+      .populate('dept_id', 'name code')
+      .populate('section_id', 'name year'),
     Schedule.countDocuments(filter),
   ]);
   return [data, total];

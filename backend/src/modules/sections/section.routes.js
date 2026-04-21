@@ -8,6 +8,7 @@ router.get('/', controller.getAll);
 router.get('/:id', controller.getById);
 router.post('/', authorize('admin', 'hod'), controller.create);
 router.patch('/:id', authorize('admin', 'hod'), controller.update);
+router.patch('/:id/subjects', authorize('admin', 'hod'), controller.setSubjects);
 router.delete('/:id', authorize('admin'), controller.remove);
 
 module.exports = router;

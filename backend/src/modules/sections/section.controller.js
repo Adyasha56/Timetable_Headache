@@ -24,4 +24,12 @@ const remove = async (req, res, next) => {
   try { await service.remove(req.params.id); success(res, null, 204); } catch (err) { next(err); }
 };
 
-module.exports = { getAll, getById, create, update, remove };
+const setSubjects = async (req, res, next) => {
+  try {
+    const { subjects } = req.body;
+    if (!Array.isArray(subjects)) return next(new (require('../../common/errors/AppError'))('subjects must be an array of IDs', 400, 'VALIDATION_ERROR'));
+    success(res, await service.setSubjects(req.params.id, subjects));
+  } catch (err) { next(err); }
+};
+
+module.exports = { getAll, getById, create, update, remove, setSubjects };

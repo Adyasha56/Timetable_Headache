@@ -1,5 +1,6 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const { MONGODB_URI } = require('./config/env');
 
 const User = require('./modules/users/user.model');
@@ -66,20 +67,23 @@ const FACULTY_DATA = [
   ['Dr. Debasree S',            'CIVIL', 'faculty', ['Project Management', 'Construction Technology']],
 
   // ECE
-  ['Dr. Pallab Kumar Kar',      'ECE', 'faculty', ['VLSI Design', 'Embedded Systems']],
-  ['Dr. Manoranjan Mishra',     'ECE', 'faculty', ['Signal Processing', 'Communication Systems']],
-  ['Pradipta Kumar Pandia',     'ECE', 'faculty', ['Microprocessors', 'Digital Electronics']],
-  ['Chinmaya Kumar Swain',      'ECE', 'faculty', ['Analog Electronics', 'Circuit Theory']],
+  ['Dr. Pallab Kumar Kar',      'ECE', 'faculty',       ['VLSI Design', 'Embedded Systems']],
+  ['Dr. Manoranjan Mishra',     'ECE', 'faculty',       ['Signal Processing', 'Communication Systems']],
+  ['Pradipta Kumar Pandia',     'ECE', 'faculty',       ['Microprocessors', 'Digital Electronics']],
+  ['Chinmaya Kumar Swain',      'ECE', 'faculty',       ['Analog Electronics', 'Circuit Theory']],
+  ['Subhashree Mohanty',        'ECE', 'lab_assistant', ['Electronics Lab', 'Signals Lab']],
 
   // EEE
-  ['Dr. Prasanna Kumar Rout',   'EEE', 'faculty', ['Power Systems', 'Electrical Machines']],
-  ['Dr. Parshuram Sahoo',       'EEE', 'faculty', ['Control Systems', 'Power Electronics']],
-  ['Radha Raman Padhi',         'EEE', 'faculty', ['Electrical Circuits', 'Network Theory']],
+  ['Dr. Prasanna Kumar Rout',   'EEE', 'faculty',       ['Power Systems', 'Electrical Machines']],
+  ['Dr. Parshuram Sahoo',       'EEE', 'faculty',       ['Control Systems', 'Power Electronics']],
+  ['Radha Raman Padhi',         'EEE', 'faculty',       ['Electrical Circuits', 'Network Theory']],
+  ['Suresh Kumar Nayak',        'EEE', 'lab_assistant', ['Electrical Lab', 'Power Lab']],
 
   // MECH
-  ['Dr. Kharabela Swain',       'MECH', 'faculty', ['Thermodynamics', 'Heat Transfer']],
-  ['Pradeep Kumar Swain',       'MECH', 'faculty', ['Manufacturing Processes', 'CAD/CAM']],
-  ['Dr. Ratikanta Dash',        'MECH', 'faculty', ['Fluid Mechanics', 'Hydraulic Machines']],
+  ['Dr. Kharabela Swain',       'MECH', 'faculty',       ['Thermodynamics', 'Heat Transfer']],
+  ['Pradeep Kumar Swain',       'MECH', 'faculty',       ['Manufacturing Processes', 'CAD/CAM']],
+  ['Dr. Ratikanta Dash',        'MECH', 'faculty',       ['Fluid Mechanics', 'Hydraulic Machines']],
+  ['Deepak Kumar Sahu',         'MECH', 'lab_assistant', ['Thermodynamics Lab', 'Fluid Lab']],
 
   // MBA
   ['Dr. Md Khalid Khan',        'MBA', 'faculty', ['Finance', 'Accounting']],
@@ -94,57 +98,87 @@ const FACULTY_DATA = [
 
 // ─── SUBJECTS ────────────────────────────────────────────────
 // Format: [code, name, dept_code, type, credits, sessions_per_week, room_type]
+// Target: 28-32 sessions/week per dept so the timetable looks full
 const SUBJECTS_DATA = [
-  // CSE 2nd Semester
+  // CSE 2nd Semester — 25 sessions/week (labs meet once/week for 2h)
   ['CS201', 'Programming Using Data Structures',       'CSE', 'theory', 4, 4, 'classroom'],
-  ['CS201L','Programming Using Data Structures Lab',   'CSE', 'lab',    2, 2, 'lab'],
+  ['CS201L','Programming Using Data Structures Lab',   'CSE', 'lab',    2, 1, 'lab'],
   ['CS202', 'Elements of Engineering Physics',         'CSE', 'theory', 3, 3, 'classroom'],
-  ['CS202L','Elements of Engineering Physics Lab',     'CSE', 'lab',    1, 2, 'lab'],
+  ['CS202L','Elements of Engineering Physics Lab',     'CSE', 'lab',    1, 1, 'lab'],
   ['CS203', 'Mathematics-II',                          'CSE', 'theory', 4, 4, 'classroom'],
   ['CS204', 'Basic Civil Engineering',                 'CSE', 'theory', 3, 3, 'classroom'],
-  ['CS204L','Basic Civil Engineering Lab',             'CSE', 'lab',    1, 2, 'lab'],
+  ['CS204L','Basic Civil Engineering Lab',             'CSE', 'lab',    1, 1, 'lab'],
   ['CS205', 'Basic Electronics Engineering',           'CSE', 'theory', 3, 3, 'classroom'],
-  ['CS205L','Basic Electronics Engineering Lab',       'CSE', 'lab',    1, 2, 'lab'],
+  ['CS205L','Basic Electronics Engineering Lab',       'CSE', 'lab',    1, 1, 'lab'],
   ['CS206', 'English For Engineers-II',                'CSE', 'theory', 2, 2, 'classroom'],
-  ['CS206L','English For Engineers-II Lab',            'CSE', 'lab',    1, 2, 'lab'],
+  ['CS206L','English For Engineers-II Lab',            'CSE', 'lab',    1, 1, 'lab'],
 
-  // CIVIL 4th Semester
+  // CIVIL 4th Semester — 24 sessions/week
   ['CV401', 'Structural Analysis-I',                   'CIVIL', 'theory', 4, 4, 'classroom'],
   ['CV402', 'Thermal Engineering-I',                   'CIVIL', 'theory', 4, 4, 'classroom'],
   ['CV403', 'Surveying-I',                             'CIVIL', 'theory', 3, 3, 'classroom'],
   ['CV404', 'Environmental Engineering',               'CIVIL', 'theory', 3, 3, 'classroom'],
   ['CV405', 'Organizational Behavior',                 'CIVIL', 'theory', 2, 2, 'classroom'],
-  ['CV406', 'General Elective',                        'CIVIL', 'theory', 2, 2, 'classroom'],
-  ['CV407', 'Advanced Engineering Technology',         'CIVIL', 'theory', 2, 2, 'classroom'],
-  ['CV401L','Thermal Engineering Lab',                 'CIVIL', 'lab',    1, 2, 'lab'],
-  ['CV402L','Fluid Mechanics Lab',                     'CIVIL', 'lab',    1, 2, 'lab'],
-  ['CV403L','Surveying Lab',                           'CIVIL', 'lab',    1, 2, 'lab'],
+  ['CV406', 'Construction Technology',                 'CIVIL', 'theory', 3, 3, 'classroom'],
+  ['CV407', 'Engineering Geology',                     'CIVIL', 'theory', 3, 3, 'classroom'],
+  ['CV408', 'Advanced Engineering Technology',         'CIVIL', 'theory', 2, 2, 'classroom'],
+  ['CV401L','Thermal Engineering Lab',                 'CIVIL', 'lab',    1, 1, 'lab'],
+  ['CV402L','Fluid Mechanics Lab',                     'CIVIL', 'lab',    1, 1, 'lab'],
+  ['CV403L','Surveying Lab',                           'CIVIL', 'lab',    1, 1, 'lab'],
 
-  // ECE
+  // ECE 3rd Semester — 26 sessions/week
   ['EC301', 'Analog Electronics',                      'ECE', 'theory', 4, 4, 'classroom'],
   ['EC302', 'Digital Electronics',                     'ECE', 'theory', 4, 4, 'classroom'],
   ['EC303', 'Signals and Systems',                     'ECE', 'theory', 3, 3, 'classroom'],
-  ['EC301L','Analog Electronics Lab',                  'ECE', 'lab',    1, 2, 'lab'],
+  ['EC304', 'Electronic Devices and Circuits',         'ECE', 'theory', 4, 4, 'classroom'],
+  ['EC305', 'Communication Systems',                   'ECE', 'theory', 3, 3, 'classroom'],
+  ['EC306', 'Electromagnetic Fields Theory',           'ECE', 'theory', 3, 3, 'classroom'],
+  ['EC301L','Analog Electronics Lab',                  'ECE', 'lab',    1, 1, 'lab'],
+  ['EC302L','Digital Electronics Lab',                 'ECE', 'lab',    1, 1, 'lab'],
+  ['EC303L','Signals and Systems Lab',                 'ECE', 'lab',    1, 1, 'lab'],
 
-  // EEE
+  // EEE 3rd Semester — 25 sessions/week
   ['EE301', 'Electrical Machines',                     'EEE', 'theory', 4, 4, 'classroom'],
   ['EE302', 'Power Systems',                           'EEE', 'theory', 4, 4, 'classroom'],
-  ['EE301L','Electrical Machines Lab',                 'EEE', 'lab',    1, 2, 'lab'],
+  ['EE303', 'Power Electronics',                       'EEE', 'theory', 4, 4, 'classroom'],
+  ['EE304', 'Control Systems',                         'EEE', 'theory', 3, 3, 'classroom'],
+  ['EE305', 'Electrical Measurements',                 'EEE', 'theory', 3, 3, 'classroom'],
+  ['EE306', 'Network Theory',                          'EEE', 'theory', 3, 3, 'classroom'],
+  ['EE307', 'Mathematics for EEE',                     'EEE', 'theory', 3, 3, 'classroom'],
+  ['EE301L','Electrical Machines Lab',                 'EEE', 'lab',    1, 1, 'lab'],
+  ['EE302L','Power Systems Lab',                       'EEE', 'lab',    1, 1, 'lab'],
 
-  // MECH
+  // MECH 3rd Semester — 26 sessions/week
   ['ME301', 'Thermodynamics',                          'MECH', 'theory', 4, 4, 'classroom'],
   ['ME302', 'Fluid Mechanics',                         'MECH', 'theory', 4, 4, 'classroom'],
-  ['ME301L','Thermodynamics Lab',                      'MECH', 'lab',    1, 2, 'lab'],
+  ['ME303', 'Theory of Machines',                      'MECH', 'theory', 4, 4, 'classroom'],
+  ['ME304', 'Manufacturing Technology',                'MECH', 'theory', 3, 3, 'classroom'],
+  ['ME305', 'Heat Transfer',                           'MECH', 'theory', 3, 3, 'classroom'],
+  ['ME306', 'Engineering Materials',                   'MECH', 'theory', 3, 3, 'classroom'],
+  ['ME307', 'Industrial Engineering',                  'MECH', 'theory', 3, 3, 'classroom'],
+  ['ME301L','Thermodynamics Lab',                      'MECH', 'lab',    1, 1, 'lab'],
+  ['ME302L','Fluid Mechanics Lab',                     'MECH', 'lab',    1, 1, 'lab'],
 
-  // MBA
+  // MBA 1st Semester — 25 sessions/week
   ['MB201', 'Financial Management',                    'MBA', 'theory', 4, 4, 'classroom'],
   ['MB202', 'Marketing Management',                    'MBA', 'theory', 4, 4, 'classroom'],
   ['MB203', 'Human Resource Management',               'MBA', 'theory', 4, 4, 'classroom'],
+  ['MB204', 'Operations Management',                   'MBA', 'theory', 3, 3, 'classroom'],
+  ['MB205', 'Business Analytics',                      'MBA', 'theory', 3, 3, 'classroom'],
+  ['MB206', 'Managerial Economics',                    'MBA', 'theory', 4, 4, 'classroom'],
+  ['MB207', 'Organizational Behavior',                 'MBA', 'theory', 3, 3, 'classroom'],
+  ['MB208', 'Business Communication',                  'MBA', 'theory', 2, 2, 'classroom'],
 
-  // MCA
+  // MCA 1st Semester — 26 sessions/week
   ['MC201', 'Advanced Algorithms',                     'MCA', 'theory', 4, 4, 'classroom'],
   ['MC202', 'Software Engineering',                    'MCA', 'theory', 4, 4, 'classroom'],
-  ['MC201L','Algorithms Lab',                          'MCA', 'lab',    2, 2, 'lab'],
+  ['MC203', 'Computer Networks',                       'MCA', 'theory', 4, 4, 'classroom'],
+  ['MC204', 'Operating Systems',                       'MCA', 'theory', 3, 3, 'classroom'],
+  ['MC205', 'Database Management Systems',             'MCA', 'theory', 3, 3, 'classroom'],
+  ['MC206', 'Web Technologies',                        'MCA', 'theory', 3, 3, 'classroom'],
+  ['MC201L','Algorithms Lab',                          'MCA', 'lab',    2, 1, 'lab'],
+  ['MC202L','Software Engineering Lab',                'MCA', 'lab',    2, 1, 'lab'],
+  ['MC203L','Networks Lab',                            'MCA', 'lab',    1, 1, 'lab'],
 ];
 
 // ─── SEED FUNCTION ──────────────────────────────────────────
@@ -180,17 +214,20 @@ const seed = async () => {
   console.log(`Departments created: ${deptDocs.length}`);
 
   // 3. Rooms (assign to CSE dept for shared rooms, null for open rooms)
+  // Block slot 5 (13:00–14:00) as lunch break on all 6 days for every room
+  const lunchSlots = [0, 1, 2, 3, 4, 5].map((day) => ({ day, slot: 5 }));
   const roomDocs = await Room.insertMany(
-    ROOMS.map((r) => ({ ...r, dept_id: deptMap['CSE'], blocked_slots: [], active: true }))
+    ROOMS.map((r) => ({ ...r, dept_id: deptMap['CSE'], blocked_slots: lunchSlots, active: true }))
   );
   console.log(`Rooms created: ${roomDocs.length}`);
 
   // 4. Faculty users + faculty records
+  const hashedFacultyPw = await bcrypt.hash('faculty123', 10);
   const facultyUsers = await User.insertMany(
     FACULTY_DATA.map(([name, dept]) => ({
       name,
       email: `${name.toLowerCase().replace(/[^a-z]/g, '.')}@gift.edu.in`,
-      password_hash: 'faculty123',
+      password_hash: hashedFacultyPw,
       role: 'faculty',
       dept_id: deptMap[dept],
       status: 'active',

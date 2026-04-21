@@ -6,7 +6,6 @@ const findAll = async (filter = {}, page = 1, limit = 20) => {
       .skip((page - 1) * limit)
       .limit(limit)
       .populate('dept_id', 'name code')
-      .populate('semester_id', 'name academic_year')
       .populate('subjects', 'code name type'),
     Section.countDocuments(filter),
   ]);
@@ -16,7 +15,6 @@ const findAll = async (filter = {}, page = 1, limit = 20) => {
 const findById = (id) =>
   Section.findById(id)
     .populate('dept_id', 'name code')
-    .populate('semester_id', 'name academic_year')
     .populate('subjects', 'code name type credits sessions_per_week');
 
 const create = (data) => Section.create(data);

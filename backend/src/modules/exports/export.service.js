@@ -4,7 +4,7 @@ const Schedule = require('../timetables/schedule.model');
 const AppError = require('../../common/errors/AppError');
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const SLOTS = ['08:30', '09:30', '10:30', '11:30', '12:30', '13:30', '14:30', '15:30'];
+const SLOTS = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00'];
 
 const getSchedule = async (scheduleId) => {
   const schedule = await Schedule.findById(scheduleId)

@@ -45,7 +45,7 @@ const parse = async ({ raw_text, semester_id, dept_id, auto_save }, userId) => {
     parsed_json,
     type: parsed_json.type || 'soft',
     weight: parsed_json.weight || 1,
-    status: 'pending',
+    status: 'active',
     created_by: userId,
   });
 
